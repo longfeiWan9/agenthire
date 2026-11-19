@@ -5,7 +5,7 @@
  */
 
 import { createHash } from "node:crypto";
-import { getAddress, isAddress } from "viem";
+import { getAddress, isAddress, zeroAddress } from "viem";
 import {
   BASE_MAINNET_CHAIN_ID,
   BASE_SEPOLIA_CHAIN_ID,
@@ -17,6 +17,14 @@ import type {
   ProviderRecord,
   ProviderService,
 } from "./types.ts";
+
+/** MVP §7.1: zero-address agent wallets normalize to null. */
+function normalizeOptionalAddress(value: string | null | undefined): Address | null {
+  if (!value || !isAddress(value, { strict: false })) return null;
+  const checksummed = checksumAddress(value);
+  if (checksummed.toLowerCase() === zeroAddress.toLowerCase()) return null;
+  return checksummed;
+}
 
 export type RegistryEvidenceInput = {
   readonly schemaVersion?: string;
@@ -270,15 +278,9 @@ export function normalizeProviderRecord(input: {
     agentId,
   );
 
-  const owner =
-    registry.owner && isAddress(registry.owner, { strict: false })
-      ? checksumAddress(registry.owner)
-      : null;
-  const agentWallet =
-    registry.agentWallet &&
-    isAddress(registry.agentWallet, { strict: false })
-      ? checksumAddress(registry.agentWallet)
-      : null;
+  const owner = normalizeOptionalAddress(registry.owner);
+  // Do not substitute owner for agent wallet (MVP §7.1).
+  const agentWallet = normalizeOptionalAddress(registry.agentWallet);
 
   if (!registry.blockNumber) {
     notes.push("missing observedAtBlock on registry evidence");

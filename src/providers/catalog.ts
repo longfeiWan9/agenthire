@@ -45,7 +45,11 @@ export type MetadataEvidenceFile = {
 export type BuildCatalogInput = {
   readonly registry: RegistryEvidenceFile;
   readonly metadata: MetadataEvidenceFile;
-  readonly generatedAt: string;
+  /**
+   * Optional override for tests only. Production builds derive
+   * `snapshotAsOf` from input evidence timestamps.
+   */
+  readonly snapshotAsOf?: string;
   readonly registryEvidencePath?: string;
   readonly metadataEvidencePath?: string;
 };
@@ -67,6 +71,206 @@ export function stableStringify(value: unknown): string {
 
 export function sha256OfString(text: string): string {
   return createHash("sha256").update(text, "utf8").digest("hex");
+}
+
+/**
+ * Deterministic catalog as-of time: max of file `capturedAt` and per-row
+ * `observedAt` values from registry + metadata inputs. Never wall-clock now().
+ */
+export function deriveSnapshotAsOf(input: {
+  readonly registry: RegistryEvidenceFile;
+  readonly metadata: MetadataEvidenceFile;
+}): string {
+  const stamps: string[] = [];
+  if (input.registry.capturedAt) stamps.push(input.registry.capturedAt);
+  if (input.metadata.capturedAt) stamps.push(input.metadata.capturedAt);
+  for (const row of input.registry.evidences) {
+    if (row.observedAt) stamps.push(row.observedAt);
+  }
+  for (const row of input.metadata.evidences) {
+    if (row.observedAt) stamps.push(row.observedAt);
+  }
+  if (stamps.length === 0) {
+    throw new Error(
+      "Cannot derive snapshotAsOf: no capturedAt/observedAt in evidence inputs",
+    );
+  }
+  return [...stamps].sort().at(-1)!;
+}
+
+export type CrossArtifactIntegrityResult = {
+  readonly ok: boolean;
+  readonly issues: string[];
+};
+
+/**
+ * Offline integrity checks across registry, metadata, catalog, and verification.
+ */
+export function checkCrossArtifactIntegrity(input: {
+  readonly registry: RegistryEvidenceFile;
+  readonly metadata: MetadataEvidenceFile;
+  readonly catalog: ProviderCatalogDocument;
+  readonly verification: ProviderVerificationDocument;
+}): CrossArtifactIntegrityResult {
+  const issues: string[] = [];
+
+  const registryKeys = new Set(
+    input.registry.evidences.map((e) =>
+      identityKey(e.chainId, e.registryAddress, e.agentId),
+    ),
+  );
+  const metadataKeys = new Set(
+    input.metadata.evidences.map((e) =>
+      identityKey(e.chainId, e.registryAddress, e.agentId),
+    ),
+  );
+  const catalogKeys = new Set(
+    input.catalog.providers.map((p) =>
+      identityKey(
+        p.identity.registryChainId,
+        p.identity.registryAddress,
+        p.identity.agentId,
+      ),
+    ),
+  );
+
+  if (input.catalog.providerCount !== input.catalog.providers.length) {
+    issues.push(
+      `providerCount ${input.catalog.providerCount} != providers.length ${input.catalog.providers.length}`,
+    );
+  }
+
+  for (const key of registryKeys) {
+    if (!catalogKeys.has(key)) {
+      issues.push(`catalog missing registry identity ${key}`);
+    }
+  }
+  for (const key of catalogKeys) {
+    if (!registryKeys.has(key)) {
+      issues.push(`catalog provider without registry evidence ${key}`);
+    }
+  }
+
+  for (const provider of input.catalog.providers) {
+    const key = identityKey(
+      provider.identity.registryChainId,
+      provider.identity.registryAddress,
+      provider.identity.agentId,
+    );
+    const registry = input.registry.evidences.find(
+      (e) =>
+        identityKey(e.chainId, e.registryAddress, e.agentId) === key,
+    );
+    const metadata = input.metadata.evidences.find(
+      (e) =>
+        identityKey(e.chainId, e.registryAddress, e.agentId) === key,
+    );
+
+    if (!registry) {
+      issues.push(`missing registry row for ${provider.providerId}`);
+      continue;
+    }
+    if (registry.tokenURI !== provider.identity.tokenURI) {
+      issues.push(`tokenURI drift for ${provider.providerId}`);
+    }
+    if (registry.blockNumber !== provider.identity.observedAtBlock) {
+      issues.push(`observedAtBlock drift for ${provider.providerId}`);
+    }
+
+    if (metadata) {
+      if (metadata.onChainTokenURI !== metadata.approvedFetchURI) {
+        issues.push(
+          `metadata URI fields diverge for ${provider.providerId}`,
+        );
+      }
+      if (
+        registry.tokenURI &&
+        metadata.onChainTokenURI !== registry.tokenURI
+      ) {
+        issues.push(
+          `registry tokenURI != metadata onChainTokenURI for ${provider.providerId}`,
+        );
+      }
+      if (provider.registration.metadataHash !== metadata.contentSha256) {
+        issues.push(`metadataHash drift for ${provider.providerId}`);
+      }
+      if (
+        provider.registration.fetchStatus === "success" &&
+        metadata.status !== "success"
+      ) {
+        issues.push(
+          `fetchStatus success but metadata status ${metadata.status} for ${provider.providerId}`,
+        );
+      }
+    } else if (metadataKeys.size > 0 && !metadataKeys.has(key)) {
+      // Allowed: registry without metadata → fetchStatus notFetched/failed.
+      if (provider.registration.fetchStatus === "success") {
+        issues.push(
+          `fetchStatus success without metadata evidence for ${provider.providerId}`,
+        );
+      }
+    }
+
+    for (const status of [
+      provider.compatibility.requestSchemaStatus,
+      provider.compatibility.responseSchemaStatus,
+      provider.compatibility.paymentStatus,
+    ] as const) {
+      if (status !== "notChecked") {
+        issues.push(
+          `compatibility must remain notChecked in D3.6/D3.7 for ${provider.providerId}`,
+        );
+      }
+    }
+    if (provider.payment.observedOffers.length !== 0) {
+      issues.push(`observedOffers must be empty for ${provider.providerId}`);
+    }
+  }
+
+  if (
+    input.verification.evidenceCount !== input.verification.evidences.length
+  ) {
+    issues.push("verification evidenceCount mismatch");
+  }
+  for (const ev of input.verification.evidences) {
+    if (ev.kind !== "registryRead" && ev.kind !== "metadataFetch") {
+      issues.push(`unexpected evidence kind ${ev.kind}`);
+    }
+    if (ev.schemaVersion !== "1.0") {
+      issues.push(`evidence schemaVersion != 1.0 (${ev.evidenceId})`);
+    }
+  }
+  for (const v of input.verification.verifications) {
+    if (
+      v.derivedMilestone !== "unverified" &&
+      v.derivedMilestone !== "discovered" &&
+      v.derivedMilestone !== "metadataValidated"
+    ) {
+      issues.push(
+        `milestone ${v.derivedMilestone} exceeds Day 3 bound for ${v.providerId}`,
+      );
+    }
+    for (const check of [
+      "endpointReachability",
+      "taskRequestCompatibility",
+      "taskResponseCompatibility",
+      "x402Challenge",
+      "paymentPolicy",
+      "paidExecution",
+    ] as const) {
+      if (v.checks[check].result !== "notChecked") {
+        issues.push(
+          `${check} must be notChecked for ${v.providerId}`,
+        );
+      }
+    }
+  }
+
+  if (input.catalog.snapshotAsOf !== input.verification.snapshotAsOf) {
+    issues.push("catalog/verification snapshotAsOf mismatch");
+  }
+
+  return { ok: issues.length === 0, issues };
 }
 
 /**
@@ -135,6 +339,12 @@ export function buildCatalogDocuments(
 ): BuildCatalogResult {
   const registryEvidences = [...input.registry.evidences];
   const metadataEvidences = [...input.metadata.evidences];
+  const snapshotAsOf =
+    input.snapshotAsOf ??
+    deriveSnapshotAsOf({
+      registry: input.registry,
+      metadata: input.metadata,
+    });
 
   const index = indexEvidence({ registryEvidences, metadataEvidences });
 
@@ -159,7 +369,7 @@ export function buildCatalogDocuments(
         provider,
         registryEvidence: registryEv,
         metadataEvidence: metadataEv,
-        evaluatedAt: input.generatedAt,
+        evaluatedAt: snapshotAsOf,
       }),
     );
   }
@@ -174,13 +384,15 @@ export function buildCatalogDocuments(
   const catalog: ProviderCatalogDocument = {
     schemaVersion: "1.0",
     mode: "READ_ONLY / NO_SIGNING",
-    generatedAt: input.generatedAt,
+    snapshotAsOf,
     source: {
       registryEvidencePath:
         input.registryEvidencePath ?? "docs/evidence/registry-reads.json",
       metadataEvidencePath:
         input.metadataEvidencePath ??
         "docs/evidence/registration-metadata.json",
+      registryCapturedAt: input.registry.capturedAt ?? null,
+      metadataCapturedAt: input.metadata.capturedAt ?? null,
     },
     providerCount: joined.providers.length,
     providers: joined.providers,
@@ -189,7 +401,7 @@ export function buildCatalogDocuments(
   const verification: ProviderVerificationDocument = {
     schemaVersion: "1.0",
     mode: "READ_ONLY / NO_SIGNING",
-    generatedAt: input.generatedAt,
+    snapshotAsOf,
     maxSupportedMilestone: "metadataValidated",
     evidenceCount: evidences.length,
     verificationCount: verifications.length,
@@ -197,14 +409,31 @@ export function buildCatalogDocuments(
     verifications,
   };
 
+  const integrity = checkCrossArtifactIntegrity({
+    registry: input.registry,
+    metadata: input.metadata,
+    catalog,
+    verification,
+  });
+
   const diagnostics: CatalogDiagnosticsDocument = {
     schemaVersion: "1.0",
-    generatedAt: input.generatedAt,
+    snapshotAsOf,
     incompleteServiceClaims: [
       ...joined.incompleteServiceClaims,
     ] as IncompleteServiceClaim[],
     joinNotes: [...joined.joinNotes].sort(),
+    integrity: {
+      ok: integrity.ok,
+      issues: integrity.issues,
+    },
   };
+
+  if (!integrity.ok) {
+    throw new Error(
+      `Cross-artifact integrity failed: ${integrity.issues.join("; ")}`,
+    );
+  }
 
   const catalogJson = stableStringify(catalog);
   const verificationJson = stableStringify(verification);
@@ -261,7 +490,7 @@ export function formatProviderCatalogMarkdown(input: {
     .join("\n");
 
   return [
-    "# AgentHire D3.6 — Provider Catalog",
+    "# AgentHire D3.6/D3.7 — Provider Catalog",
     "",
     "Offline normalization of D3.4 registry reads + D3.5 registration metadata",
     "into canonical `ProviderRecord@1.0` / `VerificationEvidence@1.0`.",
@@ -269,7 +498,7 @@ export function formatProviderCatalogMarkdown(input: {
     "",
     "## Catalog",
     "",
-    `Generated: \`${input.catalog.generatedAt}\``,
+    `snapshotAsOf (derived from input evidence): \`${input.catalog.snapshotAsOf}\``,
     "",
     `| providerId | chain | agentId | name | services | x402Advertised | fetchStatus | milestone |`,
     `| --- | --- | --- | --- | --- | --- | --- | --- |`,
@@ -284,6 +513,7 @@ export function formatProviderCatalogMarkdown(input: {
     "",
     "## Notes",
     "",
+    "- `snapshotAsOf` is the max input `capturedAt`/`observedAt`, not wall-clock build time.",
     "- Services are claims only (`endpointStatus` / `requestSchemaStatus`: `notChecked`).",
     "- `observedOffers` is empty; payment compatibility remains `notChecked`.",
     "- Day 3 upper bound milestone: `metadataValidated`.",

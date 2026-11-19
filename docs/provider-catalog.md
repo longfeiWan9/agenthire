@@ -1,4 +1,4 @@
-# AgentHire D3.6 — Provider Catalog
+# AgentHire D3.6/D3.7 — Provider Catalog
 
 Offline normalization of D3.4 registry reads + D3.5 registration metadata
 into canonical `ProviderRecord@1.0` / `VerificationEvidence@1.0`.
@@ -6,7 +6,7 @@ Mode: **READ_ONLY / NO_SIGNING**. No RPC/HTTP during catalog build.
 
 ## Catalog
 
-Generated: `2026-11-19T10:00:00.000Z`
+snapshotAsOf (derived from input evidence): `2026-11-19T09:45:48.912Z`
 
 | providerId | chain | agentId | name | services | x402Advertised | fetchStatus | milestone |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -18,11 +18,12 @@ Generated: `2026-11-19T10:00:00.000Z`
 
 | File | SHA-256 |
 | --- | --- |
-| `docs/evidence/provider-catalog.json` | `aa521b24cfb1ed4e16a78dd06376811173e15095a4e99545dd1ef8ffc6cc419b` |
-| `docs/evidence/provider-verification.json` | `e4e845a35a0d86698fbfa2983886bd051355e3e675474c2ee1bb2a07a9a750f9` |
+| `docs/evidence/provider-catalog.json` | `cf008b774450c568638034c32be7e5c2815c6f648fd95cc3ef6b4a55058a337d` |
+| `docs/evidence/provider-verification.json` | `2ab11012a4cd33491ef9d164ab1490ad0ea3e582137b49f3f76d2e56ec69df7d` |
 
 ## Notes
 
+- `snapshotAsOf` is the max input `capturedAt`/`observedAt`, not wall-clock build time.
 - Services are claims only (`endpointStatus` / `requestSchemaStatus`: `notChecked`).
 - `observedOffers` is empty; payment compatibility remains `notChecked`.
 - Day 3 upper bound milestone: `metadataValidated`.

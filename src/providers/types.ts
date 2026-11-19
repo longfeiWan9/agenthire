@@ -217,10 +217,16 @@ export type VerificationEvidence = {
 export type ProviderCatalogDocument = {
   schemaVersion: "1.0";
   mode: "READ_ONLY / NO_SIGNING";
-  generatedAt: string;
+  /**
+   * Deterministic as-of timestamp derived from input evidence
+   * (`capturedAt` / `observedAt` maxima). Not wall-clock build time.
+   */
+  snapshotAsOf: string;
   source: {
     registryEvidencePath: string;
     metadataEvidencePath: string;
+    registryCapturedAt: string | null;
+    metadataCapturedAt: string | null;
   };
   providerCount: number;
   providers: ProviderRecord[];
@@ -229,7 +235,8 @@ export type ProviderCatalogDocument = {
 export type ProviderVerificationDocument = {
   schemaVersion: "1.0";
   mode: "READ_ONLY / NO_SIGNING";
-  generatedAt: string;
+  /** Same semantics as ProviderCatalogDocument.snapshotAsOf. */
+  snapshotAsOf: string;
   /** Day 3 upper bound: metadataValidated */
   maxSupportedMilestone: "metadataValidated";
   evidenceCount: number;
@@ -240,11 +247,15 @@ export type ProviderVerificationDocument = {
 
 export type CatalogDiagnosticsDocument = {
   schemaVersion: "1.0";
-  generatedAt: string;
+  snapshotAsOf: string;
   incompleteServiceClaims: {
     providerId: string;
     reason: string;
     claim: unknown;
   }[];
   joinNotes: string[];
+  integrity: {
+    ok: boolean;
+    issues: string[];
+  };
 };

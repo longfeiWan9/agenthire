@@ -1,7 +1,12 @@
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { getAddress } from "viem";
 import {
   buildCatalogDocuments,
+  checkCrossArtifactIntegrity,
+  deriveSnapshotAsOf,
+  loadEvidenceFiles,
   sha256OfString,
   stableStringify,
 } from "../src/providers/catalog.ts";
@@ -102,6 +107,15 @@ describe("provider identity", () => {
     const b = buildProviderId(84532, getAddress(REGISTRY_SEPOLIA), "9136");
     expect(a).not.toBe(b);
   });
+
+  it("rejects invalid registry addresses and non-decimal agent ids", () => {
+    expect(() =>
+      identityKey(8453, "0xdead", "19353"),
+    ).toThrow(/Invalid EVM address/);
+    expect(() =>
+      identityKey(8453, REGISTRY_MAIN, "19_353"),
+    ).toThrow(/decimal string/);
+  });
 });
 
 describe("service normalization", () => {
@@ -134,6 +148,41 @@ describe("payment mapping", () => {
     expect(mapFetchStatus(metadataFixture({ status: "failed" }))).toBe(
       "failed",
     );
+  });
+});
+
+describe("identity field normalization", () => {
+  it("nullifies zero-address agent wallets and does not substitute owner", () => {
+    const registry = registryFixture({
+      agentWallet: "0x0000000000000000000000000000000000000000",
+    });
+    const { provider } = normalizeProviderRecord({
+      registry,
+      registryEvidenceId: "ev-test-registry",
+    });
+    expect(provider.identity.agentWallet).toBeNull();
+    expect(provider.identity.owner).toBe(
+      "0xe9D45C3F847a7d2aE4efD7D6Da491f8a7E19b9F0",
+    );
+    expect(provider.identity.agentWallet).not.toBe(provider.identity.owner);
+  });
+});
+
+describe("incomplete service claims", () => {
+  it("rejects duplicates and records incomplete diagnostics", () => {
+    const { services, incomplete } = normalizeAdvertisedServices(
+      "eip155:8453/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432/19353",
+      [
+        { name: "web", endpoint: "https://example.com/" },
+        { name: "web", endpoint: "https://example.com/" },
+        { name: "ftp", endpoint: "ftp://example.com/x" },
+      ],
+    );
+    expect(services).toHaveLength(1);
+    expect(incomplete.map((i) => i.reason).sort()).toEqual([
+      "duplicate_service",
+      "invalid_endpoint_url",
+    ]);
   });
 });
 
@@ -255,9 +304,35 @@ describe("verification evidence", () => {
   });
 });
 
-describe("catalog determinism", () => {
+describe("snapshotAsOf derivation", () => {
+  it("uses max capturedAt/observedAt and never invents wall-clock time", () => {
+    const registry = {
+      capturedAt: "2026-11-19T09:10:23.986Z",
+      evidences: [registryFixture()],
+    };
+    const metadata = {
+      capturedAt: "2026-11-19T09:45:48.912Z",
+      evidences: [metadataFixture()],
+    };
+    expect(deriveSnapshotAsOf({ registry, metadata })).toBe(
+      "2026-11-19T09:45:48.912Z",
+    );
+  });
+
+  it("fails closed when evidence timestamps are absent", () => {
+    expect(() =>
+      deriveSnapshotAsOf({
+        registry: { evidences: [{ ...registryFixture(), observedAt: "" }] },
+        metadata: { evidences: [{ ...metadataFixture(), observedAt: "" }] },
+      }),
+    ).toThrow(/Cannot derive snapshotAsOf/);
+  });
+});
+
+describe("catalog determinism + integrity", () => {
   it("produces byte-identical catalog JSON across two builds", () => {
     const registry = {
+      capturedAt: "2026-11-19T09:10:23.986Z",
       evidences: [
         registryFixture(),
         registryFixture({
@@ -281,6 +356,7 @@ describe("catalog determinism", () => {
       ],
     };
     const metadata = {
+      capturedAt: "2026-11-19T09:45:48.912Z",
       evidences: [
         metadataFixture(),
         metadataFixture({
@@ -322,18 +398,10 @@ describe("catalog determinism", () => {
       ],
     };
 
-    const generatedAt = "2026-11-19T10:00:00.000Z";
-    const first = buildCatalogDocuments({
-      registry,
-      metadata,
-      generatedAt,
-    });
-    const second = buildCatalogDocuments({
-      registry,
-      metadata,
-      generatedAt,
-    });
+    const first = buildCatalogDocuments({ registry, metadata });
+    const second = buildCatalogDocuments({ registry, metadata });
 
+    expect(first.catalog.snapshotAsOf).toBe("2026-11-19T09:45:48.912Z");
     expect(first.catalogJson).toBe(second.catalogJson);
     expect(first.verificationJson).toBe(second.verificationJson);
     expect(first.catalogSha256).toBe(second.catalogSha256);
@@ -351,5 +419,69 @@ describe("catalog determinism", () => {
       ),
     ).toBe(true);
     expect(stableStringify(first.catalog)).toBe(first.catalogJson);
+    expect(first.diagnostics.integrity.ok).toBe(true);
+
+    const integrity = checkCrossArtifactIntegrity({
+      registry,
+      metadata,
+      catalog: first.catalog,
+      verification: first.verification,
+    });
+    expect(integrity.ok).toBe(true);
+  });
+
+  it("flags metadataHash drift as an integrity failure", () => {
+    const registry = {
+      capturedAt: "2026-11-19T09:10:23.986Z",
+      evidences: [registryFixture()],
+    };
+    const metadata = {
+      capturedAt: "2026-11-19T09:45:48.912Z",
+      evidences: [metadataFixture()],
+    };
+    const built = buildCatalogDocuments({ registry, metadata });
+    const tampered = {
+      ...built.catalog,
+      providers: built.catalog.providers.map((p) => ({
+        ...p,
+        registration: {
+          ...p.registration,
+          metadataHash: "0".repeat(64),
+        },
+      })),
+    };
+    const integrity = checkCrossArtifactIntegrity({
+      registry,
+      metadata,
+      catalog: tampered,
+      verification: built.verification,
+    });
+    expect(integrity.ok).toBe(false);
+    expect(integrity.issues.some((i) => i.includes("metadataHash"))).toBe(
+      true,
+    );
+  });
+
+  it("rebuilds committed evidence offline with integrity PASS", () => {
+    const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+    const { registry, metadata } = loadEvidenceFiles({
+      registryPath: join(repoRoot, "docs/evidence/registry-reads.json"),
+      metadataPath: join(repoRoot, "docs/evidence/registration-metadata.json"),
+    });
+    const built = buildCatalogDocuments({
+      registry,
+      metadata,
+      registryEvidencePath: "docs/evidence/registry-reads.json",
+      metadataEvidencePath: "docs/evidence/registration-metadata.json",
+    });
+    expect(built.catalog.providerCount).toBe(3);
+    expect(built.catalog.snapshotAsOf).toBe("2026-11-19T09:45:48.912Z");
+    expect(built.diagnostics.integrity.ok).toBe(true);
+    expect(built.verification.evidenceCount).toBe(6);
+    expect(
+      built.verification.verifications.every(
+        (v) => v.derivedMilestone === "metadataValidated",
+      ),
+    ).toBe(true);
   });
 });

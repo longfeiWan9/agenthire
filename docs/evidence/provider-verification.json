@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "mode": "READ_ONLY / NO_SIGNING",
-  "generatedAt": "2026-11-19T10:00:00.000Z",
+  "snapshotAsOf": "2026-11-19T09:45:48.912Z",
   "maxSupportedMilestone": "metadataValidated",
   "evidenceCount": 6,
   "verificationCount": 3,
@@ -253,7 +253,7 @@
       },
       "derivedMilestone": "metadataValidated",
       "availability": "unknown",
-      "evaluatedAt": "2026-11-19T10:00:00.000Z"
+      "evaluatedAt": "2026-11-19T09:45:48.912Z"
     },
     {
       "providerId": "eip155:8453/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432/94639",
@@ -308,7 +308,7 @@
       },
       "derivedMilestone": "metadataValidated",
       "availability": "unknown",
-      "evaluatedAt": "2026-11-19T10:00:00.000Z"
+      "evaluatedAt": "2026-11-19T09:45:48.912Z"
     },
     {
       "providerId": "eip155:84532/0x8004A818BFB912233c491871b3d84c89A494BD9e/9136",
@@ -363,7 +363,7 @@
       },
       "derivedMilestone": "metadataValidated",
       "availability": "unknown",
-      "evaluatedAt": "2026-11-19T10:00:00.000Z"
+      "evaluatedAt": "2026-11-19T09:45:48.912Z"
     }
   ]
 }

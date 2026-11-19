@@ -1,10 +1,12 @@
 {
   "schemaVersion": "1.0",
   "mode": "READ_ONLY / NO_SIGNING",
-  "generatedAt": "2026-11-19T10:00:00.000Z",
+  "snapshotAsOf": "2026-11-19T09:45:48.912Z",
   "source": {
     "registryEvidencePath": "docs/evidence/registry-reads.json",
-    "metadataEvidencePath": "docs/evidence/registration-metadata.json"
+    "metadataEvidencePath": "docs/evidence/registration-metadata.json",
+    "registryCapturedAt": "2026-11-19T09:10:23.986Z",
+    "metadataCapturedAt": "2026-11-19T09:45:48.912Z"
   },
   "providerCount": 3,
   "providers": [

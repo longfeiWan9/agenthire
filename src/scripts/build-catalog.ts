@@ -2,9 +2,10 @@
  * CLI: offline ProviderRecord@1.0 catalog from D3.4 + D3.5 evidence.
  *
  * Usage: pnpm build:catalog
- * Exit: nonzero if zero providers produced.
+ * Exit: nonzero if zero providers produced or integrity fails.
  *
  * READ_ONLY / NO_SIGNING — no RPC, no HTTP.
+ * snapshotAsOf is derived from input evidence timestamps (not wall-clock).
  */
 
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -18,11 +19,12 @@ import {
 
 export async function runBuildCatalog(options?: {
   readonly repoRoot?: string;
-  readonly generatedAt?: string;
+  readonly snapshotAsOf?: string;
   readonly writeDiagnostics?: boolean;
 }): Promise<{
   readonly ok: boolean;
   readonly providerCount: number;
+  readonly snapshotAsOf: string;
   readonly catalogSha256: string;
   readonly verificationSha256: string;
   readonly report: string;
@@ -35,7 +37,6 @@ export async function runBuildCatalog(options?: {
     repoRoot,
     "docs/evidence/registration-metadata.json",
   );
-  const generatedAt = options?.generatedAt ?? "1970-01-01T00:00:00.000Z";
 
   const { registry, metadata } = loadEvidenceFiles({
     registryPath,
@@ -45,7 +46,9 @@ export async function runBuildCatalog(options?: {
   const result = buildCatalogDocuments({
     registry,
     metadata,
-    generatedAt,
+    ...(options?.snapshotAsOf
+      ? { snapshotAsOf: options.snapshotAsOf }
+      : {}),
     registryEvidencePath: "docs/evidence/registry-reads.json",
     metadataEvidencePath: "docs/evidence/registration-metadata.json",
   });
@@ -81,12 +84,13 @@ export async function runBuildCatalog(options?: {
 
   const ok = result.catalog.providerCount > 0;
   const lines = [
-    "# AgentHire provider catalog (D3.6)",
+    "# AgentHire provider catalog (D3.6/D3.7)",
     "Mode: READ_ONLY / NO_SIGNING",
-    `generatedAt: ${generatedAt}`,
+    `snapshotAsOf: ${result.catalog.snapshotAsOf}`,
     `providers: ${result.catalog.providerCount}`,
     `evidences: ${result.verification.evidenceCount}`,
     `verifications: ${result.verification.verificationCount}`,
+    `integrity: ${result.diagnostics.integrity.ok ? "PASS" : "FAIL"}`,
     `catalogSha256: ${result.catalogSha256}`,
     `verificationSha256: ${result.verificationSha256}`,
     `overall: ${ok ? "PASS" : "FAIL"}`,
@@ -101,6 +105,7 @@ export async function runBuildCatalog(options?: {
   return {
     ok,
     providerCount: result.catalog.providerCount,
+    snapshotAsOf: result.catalog.snapshotAsOf,
     catalogSha256: result.catalogSha256,
     verificationSha256: result.verificationSha256,
     report: lines.join("\n"),
@@ -108,9 +113,7 @@ export async function runBuildCatalog(options?: {
 }
 
 async function main(): Promise<void> {
-  // Fixed timestamp → byte-identical reruns for SHA-256 reproducibility.
-  const generatedAt = "2026-11-19T10:00:00.000Z";
-  const { ok, report } = await runBuildCatalog({ generatedAt });
+  const { ok, report } = await runBuildCatalog();
   process.stdout.write(report);
   process.exitCode = ok ? 0 : 1;
 }
