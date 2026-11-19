@@ -1,0 +1,624 @@
+{
+  "schemaVersion": "1.0",
+  "mode": "READ_ONLY / NO_SIGNING",
+  "capturedAt": "2026-11-19T09:45:48.912Z",
+  "source": "live-https-allowlisted",
+  "successfulMetadataReads": 3,
+  "approvedUrls": [
+    "https://onchainagentintel.io/agent.json",
+    "https://agent402.tools/.well-known/agent-registration.json",
+    "https://agents.quantjourney.cloud/.well-known/agent-registration.json"
+  ],
+  "evidences": [
+    {
+      "schemaVersion": "1.0",
+      "chainId": 8453,
+      "caip2": "eip155:8453",
+      "networkName": "Base Mainnet",
+      "registryAddress": "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432",
+      "agentId": "19353",
+      "onChainTokenURI": "https://onchainagentintel.io/agent.json",
+      "approvedFetchURI": "https://onchainagentintel.io/agent.json",
+      "displayURI": "https://onchainagentintel.io/agent.json",
+      "status": "success",
+      "observedAt": "2026-11-19T09:45:48.912Z",
+      "httpStatus": 200,
+      "contentType": "application/json",
+      "contentSha256": "a277e4c072391bd1d0586df6b8355caf9c7ecf35c0f9649739665793ab699c63",
+      "byteLength": 47643,
+      "pinnedAddress": "172.67.156.98",
+      "resolvedAddresses": [
+        "2606:4700:3037::6815:526d",
+        "2606:4700:3030::ac43:9c62",
+        "172.67.156.98",
+        "104.21.82.109"
+      ],
+      "elapsedMs": 752,
+      "fetchErrorClass": null,
+      "error": null,
+      "validationIssues": [],
+      "registration": {
+        "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+        "name": "Agent Zero",
+        "description": "Check an AI agent before you pay it. Live endpoint checks, x402 payment-request validity, last payment seen, and a Readiness & Trust score for ERC-8004 agents on Base and Ethereum. Pay per call with x402. Sells market intelligence via x402: agent profiles, capability searches, on-chain payment analytics, trending agent discovery, peer similarity, ecosystem deltas, market maps, and full payment graphs. Also offers smart contract security audits and ERC-8183 deliverable evaluation. Discoverable via ERC-8004 agentId 19353. All payments via x402 protocol.",
+        "image": "https://onchainagentintel.io/logo.png",
+        "x402Support": true,
+        "active": null,
+        "registrations": [
+          {
+            "agentId": "19353",
+            "agentRegistry": "eip155:8453:0x8004A169FB4a3325136EB29fA0ceB6D2e539a432"
+          }
+        ],
+        "supportedTrust": null,
+        "services": [
+          {
+            "name": "A2A",
+            "endpoint": "https://onchainagentintel.io/.well-known/agent-card.json",
+            "version": "0.3.0",
+            "skills": null,
+            "domains": null,
+            "verificationStatus": "notChecked"
+          },
+          {
+            "name": "web",
+            "endpoint": "https://onchainagentintel.io",
+            "version": null,
+            "skills": null,
+            "domains": null,
+            "verificationStatus": "notChecked"
+          },
+          {
+            "name": "mcp",
+            "endpoint": "https://api.onchainagentintel.io/mcp",
+            "version": null,
+            "skills": null,
+            "domains": null,
+            "verificationStatus": "notChecked"
+          },
+          {
+            "name": "x402",
+            "endpoint": "https://api.onchainagentintel.io/v1/intel",
+            "version": null,
+            "skills": null,
+            "domains": null,
+            "verificationStatus": "notChecked"
+          },
+          {
+            "name": "Agent Intelligence — Profile Lookup",
+            "endpoint": "https://api.onchainagentintel.io/v1/intel/agent/{agent_id}",
+            "version": null,
+            "skills": null,
+            "domains": null,
+            "verificationStatus": "notChecked"
+          },
+          {
+            "name": "Agent Intelligence — Capability Search",
+            "endpoint": "https://api.onchainagentintel.io/v1/intel/search",
+            "version": null,
+            "skills": null,
+            "domains": null,
+            "verificationStatus": "notChecked"
+          },
+          {
+            "name": "Agent Intelligence — Trending & Market Activity",
+            "endpoint": "https://api.onchainagentintel.io/v1/intel/trending",
+            "version": null,
+            "skills": null,
+            "domains": null,
+            "verificationStatus": "notChecked"
+          },
+          {
+            "name": "Agent Intelligence — Peer Similarity",
+            "endpoint": "https://api.onchainagentintel.io/v1/intel/peers/{agent_id}",
+            "version": null,
+            "skills": null,
+            "domains": null,
+            "verificationStatus": "notChecked"
+          },
+          {
+            "name": "Agent Intelligence — Capability Market Map",
+            "endpoint": "https://api.onchainagentintel.io/v1/intel/market",
+            "version": null,
+            "skills": null,
+            "domains": null,
+            "verificationStatus": "notChecked"
+          },
+          {
+            "name": "Agent Intelligence — Ecosystem Delta",
+            "endpoint": "https://api.onchainagentintel.io/v1/intel/delta",
+            "version": null,
+            "skills": null,
+            "domains": null,
+            "verificationStatus": "notChecked"
+          },
+          {
+            "name": "Agent Intelligence — Full Payment Graph",
+            "endpoint": "https://api.onchainagentintel.io/v1/intel/graph",
+            "version": null,
+            "skills": null,
+            "domains": null,
+            "verificationStatus": "notChecked"
+          },
+          {
+            "name": "Agent Intelligence — 30-Day Flat-Rate Subscription",
+            "endpoint": "https://api.onchainagentintel.io/v1/intel/subscribe",
+            "version": null,
+            "skills": null,
+            "domains": null,
+            "verificationStatus": "notChecked"
+          },
+          {
+            "name": "Agent Intelligence — Subscription Status (free)",
+            "endpoint": "https://api.onchainagentintel.io/v1/intel/subscription/{sub_id}",
+            "version": null,
+            "skills": null,
+            "domains": null,
+            "verificationStatus": "notChecked"
+          },
+          {
+            "name": "Smart Contract Security Audit",
+            "endpoint": "https://api.onchainagentintel.io/v1/audit",
+            "version": null,
+            "skills": null,
+            "domains": null,
+            "verificationStatus": "notChecked"
+          },
+          {
+            "name": "ERC-8183 Deliverable Evaluation",
+            "endpoint": "https://api.onchainagentintel.io/v1/evaluate",
+            "version": null,
+            "skills": null,
+            "domains": null,
+            "verificationStatus": "notChecked"
+          },
+          {
+            "name": "Public Coverage Stats (free)",
+            "endpoint": "https://api.onchainagentintel.io/v1/public/stats",
+            "version": null,
+            "skills": null,
+            "domains": null,
+            "verificationStatus": "notChecked"
+          },
+          {
+            "name": "Public Leaderboards (free)",
+            "endpoint": "https://api.onchainagentintel.io/v1/public/leaderboards",
+            "version": null,
+            "skills": null,
+            "domains": null,
+            "verificationStatus": "notChecked"
+          },
+          {
+            "name": "Seller Check (free)",
+            "endpoint": "https://api.onchainagentintel.io/v1/public/seller-check/free",
+            "version": null,
+            "skills": null,
+            "domains": null,
+            "verificationStatus": "notChecked"
+          },
+          {
+            "name": "Public Agent Detail (free)",
+            "endpoint": "https://api.onchainagentintel.io/v1/public/agent/{chain}/{agent_id}",
+            "version": null,
+            "skills": null,
+            "domains": null,
+            "verificationStatus": "notChecked"
+          },
+          {
+            "name": "Seller Check (paid)",
+            "endpoint": "https://api.onchainagentintel.io/v1/seller-check",
+            "version": null,
+            "skills": null,
+            "domains": null,
+            "verificationStatus": "notChecked"
+          }
+        ],
+        "usedLegacyEndpointsField": false
+      },
+      "advertisedServices": [
+        {
+          "name": "A2A",
+          "endpoint": "https://onchainagentintel.io/.well-known/agent-card.json",
+          "version": "0.3.0",
+          "skills": null,
+          "domains": null,
+          "verificationStatus": "notChecked"
+        },
+        {
+          "name": "web",
+          "endpoint": "https://onchainagentintel.io",
+          "version": null,
+          "skills": null,
+          "domains": null,
+          "verificationStatus": "notChecked"
+        },
+        {
+          "name": "mcp",
+          "endpoint": "https://api.onchainagentintel.io/mcp",
+          "version": null,
+          "skills": null,
+          "domains": null,
+          "verificationStatus": "notChecked"
+        },
+        {
+          "name": "x402",
+          "endpoint": "https://api.onchainagentintel.io/v1/intel",
+          "version": null,
+          "skills": null,
+          "domains": null,
+          "verificationStatus": "notChecked"
+        },
+        {
+          "name": "Agent Intelligence — Profile Lookup",
+          "endpoint": "https://api.onchainagentintel.io/v1/intel/agent/{agent_id}",
+          "version": null,
+          "skills": null,
+          "domains": null,
+          "verificationStatus": "notChecked"
+        },
+        {
+          "name": "Agent Intelligence — Capability Search",
+          "endpoint": "https://api.onchainagentintel.io/v1/intel/search",
+          "version": null,
+          "skills": null,
+          "domains": null,
+          "verificationStatus": "notChecked"
+        },
+        {
+          "name": "Agent Intelligence — Trending & Market Activity",
+          "endpoint": "https://api.onchainagentintel.io/v1/intel/trending",
+          "version": null,
+          "skills": null,
+          "domains": null,
+          "verificationStatus": "notChecked"
+        },
+        {
+          "name": "Agent Intelligence — Peer Similarity",
+          "endpoint": "https://api.onchainagentintel.io/v1/intel/peers/{agent_id}",
+          "version": null,
+          "skills": null,
+          "domains": null,
+          "verificationStatus": "notChecked"
+        },
+        {
+          "name": "Agent Intelligence — Capability Market Map",
+          "endpoint": "https://api.onchainagentintel.io/v1/intel/market",
+          "version": null,
+          "skills": null,
+          "domains": null,
+          "verificationStatus": "notChecked"
+        },
+        {
+          "name": "Agent Intelligence — Ecosystem Delta",
+          "endpoint": "https://api.onchainagentintel.io/v1/intel/delta",
+          "version": null,
+          "skills": null,
+          "domains": null,
+          "verificationStatus": "notChecked"
+        },
+        {
+          "name": "Agent Intelligence — Full Payment Graph",
+          "endpoint": "https://api.onchainagentintel.io/v1/intel/graph",
+          "version": null,
+          "skills": null,
+          "domains": null,
+          "verificationStatus": "notChecked"
+        },
+        {
+          "name": "Agent Intelligence — 30-Day Flat-Rate Subscription",
+          "endpoint": "https://api.onchainagentintel.io/v1/intel/subscribe",
+          "version": null,
+          "skills": null,
+          "domains": null,
+          "verificationStatus": "notChecked"
+        },
+        {
+          "name": "Agent Intelligence — Subscription Status (free)",
+          "endpoint": "https://api.onchainagentintel.io/v1/intel/subscription/{sub_id}",
+          "version": null,
+          "skills": null,
+          "domains": null,
+          "verificationStatus": "notChecked"
+        },
+        {
+          "name": "Smart Contract Security Audit",
+          "endpoint": "https://api.onchainagentintel.io/v1/audit",
+          "version": null,
+          "skills": null,
+          "domains": null,
+          "verificationStatus": "notChecked"
+        },
+        {
+          "name": "ERC-8183 Deliverable Evaluation",
+          "endpoint": "https://api.onchainagentintel.io/v1/evaluate",
+          "version": null,
+          "skills": null,
+          "domains": null,
+          "verificationStatus": "notChecked"
+        },
+        {
+          "name": "Public Coverage Stats (free)",
+          "endpoint": "https://api.onchainagentintel.io/v1/public/stats",
+          "version": null,
+          "skills": null,
+          "domains": null,
+          "verificationStatus": "notChecked"
+        },
+        {
+          "name": "Public Leaderboards (free)",
+          "endpoint": "https://api.onchainagentintel.io/v1/public/leaderboards",
+          "version": null,
+          "skills": null,
+          "domains": null,
+          "verificationStatus": "notChecked"
+        },
+        {
+          "name": "Seller Check (free)",
+          "endpoint": "https://api.onchainagentintel.io/v1/public/seller-check/free",
+          "version": null,
+          "skills": null,
+          "domains": null,
+          "verificationStatus": "notChecked"
+        },
+        {
+          "name": "Public Agent Detail (free)",
+          "endpoint": "https://api.onchainagentintel.io/v1/public/agent/{chain}/{agent_id}",
+          "version": null,
+          "skills": null,
+          "domains": null,
+          "verificationStatus": "notChecked"
+        },
+        {
+          "name": "Seller Check (paid)",
+          "endpoint": "https://api.onchainagentintel.io/v1/seller-check",
+          "version": null,
+          "skills": null,
+          "domains": null,
+          "verificationStatus": "notChecked"
+        }
+      ]
+    },
+    {
+      "schemaVersion": "1.0",
+      "chainId": 8453,
+      "caip2": "eip155:8453",
+      "networkName": "Base Mainnet",
+      "registryAddress": "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432",
+      "agentId": "94639",
+      "onChainTokenURI": "https://agent402.tools/.well-known/agent-registration.json",
+      "approvedFetchURI": "https://agent402.tools/.well-known/agent-registration.json",
+      "displayURI": "https://agent402.tools/.well-known/agent-registration.json",
+      "status": "success",
+      "observedAt": "2026-11-19T09:45:48.912Z",
+      "httpStatus": 200,
+      "contentType": "application/json; charset=utf-8",
+      "contentSha256": "2eb8bc1b58b23014d4d7c683979ba763ac6a4be3a31541d9a40f6dd7fd2cf3fa",
+      "byteLength": 885,
+      "pinnedAddress": "172.67.203.247",
+      "resolvedAddresses": [
+        "2606:4700:3036::6815:2532",
+        "2606:4700:3037::ac43:cbf7",
+        "172.67.203.247",
+        "104.21.37.50"
+      ],
+      "elapsedMs": 921,
+      "fetchErrorClass": null,
+      "error": null,
+      "validationIssues": [],
+      "registration": {
+        "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+        "name": "Agent402",
+        "description": "Pay-per-call web tools for autonomous agents: 621 priced endpoints settled in stablecoins (USDC, or USDG on Robinhood Chain) over x402 or MPP, free via proof of work for the pure-CPU tools, and finished reports by card. No account and no API key.",
+        "image": "https://agent402.tools/logo.png",
+        "x402Support": true,
+        "active": true,
+        "registrations": [
+          {
+            "agentId": "94639",
+            "agentRegistry": "eip155:8453:0x8004A169FB4a3325136EB29fA0ceB6D2e539a432"
+          }
+        ],
+        "supportedTrust": null,
+        "services": [
+          {
+            "name": "web",
+            "endpoint": "https://agent402.tools/",
+            "version": null,
+            "skills": null,
+            "domains": null,
+            "verificationStatus": "notChecked"
+          },
+          {
+            "name": "MCP",
+            "endpoint": "https://agent402.tools/mcp",
+            "version": null,
+            "skills": null,
+            "domains": null,
+            "verificationStatus": "notChecked"
+          },
+          {
+            "name": "A2A",
+            "endpoint": "https://agent402.tools/.well-known/agent-card.json",
+            "version": "0.3.0",
+            "skills": null,
+            "domains": null,
+            "verificationStatus": "notChecked"
+          },
+          {
+            "name": "OpenAPI",
+            "endpoint": "https://agent402.tools/openapi.json",
+            "version": null,
+            "skills": null,
+            "domains": null,
+            "verificationStatus": "notChecked"
+          },
+          {
+            "name": "x402",
+            "endpoint": "https://agent402.tools/.well-known/x402",
+            "version": null,
+            "skills": null,
+            "domains": null,
+            "verificationStatus": "notChecked"
+          }
+        ],
+        "usedLegacyEndpointsField": false
+      },
+      "advertisedServices": [
+        {
+          "name": "web",
+          "endpoint": "https://agent402.tools/",
+          "version": null,
+          "skills": null,
+          "domains": null,
+          "verificationStatus": "notChecked"
+        },
+        {
+          "name": "MCP",
+          "endpoint": "https://agent402.tools/mcp",
+          "version": null,
+          "skills": null,
+          "domains": null,
+          "verificationStatus": "notChecked"
+        },
+        {
+          "name": "A2A",
+          "endpoint": "https://agent402.tools/.well-known/agent-card.json",
+          "version": "0.3.0",
+          "skills": null,
+          "domains": null,
+          "verificationStatus": "notChecked"
+        },
+        {
+          "name": "OpenAPI",
+          "endpoint": "https://agent402.tools/openapi.json",
+          "version": null,
+          "skills": null,
+          "domains": null,
+          "verificationStatus": "notChecked"
+        },
+        {
+          "name": "x402",
+          "endpoint": "https://agent402.tools/.well-known/x402",
+          "version": null,
+          "skills": null,
+          "domains": null,
+          "verificationStatus": "notChecked"
+        }
+      ]
+    },
+    {
+      "schemaVersion": "1.0",
+      "chainId": 84532,
+      "caip2": "eip155:84532",
+      "networkName": "Base Sepolia",
+      "registryAddress": "0x8004A818BFB912233c491871b3d84c89A494BD9e",
+      "agentId": "9136",
+      "onChainTokenURI": "https://agents.quantjourney.cloud/.well-known/agent-registration.json",
+      "approvedFetchURI": "https://agents.quantjourney.cloud/.well-known/agent-registration.json",
+      "displayURI": "https://agents.quantjourney.cloud/.well-known/agent-registration.json",
+      "status": "success",
+      "observedAt": "2026-11-19T09:45:48.912Z",
+      "httpStatus": 200,
+      "contentType": "application/json",
+      "contentSha256": "121502d61e2e4fe1d933351251931165cced4d19928bc6987902c9651915836a",
+      "byteLength": 983,
+      "pinnedAddress": "104.26.15.81",
+      "resolvedAddresses": [
+        "2606:4700:20::681a:f51",
+        "2606:4700:20::ac43:44ce",
+        "2606:4700:20::681a:e51",
+        "104.26.15.81",
+        "104.26.14.81",
+        "172.67.68.206"
+      ],
+      "elapsedMs": 1420,
+      "fetchErrorClass": null,
+      "error": null,
+      "validationIssues": [],
+      "registration": {
+        "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+        "name": "QuantJourney Research Agent Fabric",
+        "description": "ERC-8004 Draft identity for bounded, evidence-backed financial research. Generic A2A task delegation is disabled; use the bounded query routes in OpenAPI.",
+        "image": "https://agents.quantjourney.cloud/static/social-card.png",
+        "x402Support": false,
+        "active": true,
+        "registrations": [
+          {
+            "agentId": "9136",
+            "agentRegistry": "eip155:84532:0x8004A818BFB912233c491871b3d84c89A494BD9e"
+          }
+        ],
+        "supportedTrust": [],
+        "services": [
+          {
+            "name": "web",
+            "endpoint": "https://agents.quantjourney.cloud/",
+            "version": null,
+            "skills": null,
+            "domains": null,
+            "verificationStatus": "notChecked"
+          },
+          {
+            "name": "A2A",
+            "endpoint": "https://agents.quantjourney.cloud/.well-known/agent-card.json",
+            "version": "1.0",
+            "skills": null,
+            "domains": null,
+            "verificationStatus": "notChecked"
+          },
+          {
+            "name": "MCP",
+            "endpoint": "https://api.quantjourney.cloud/mcp",
+            "version": "2025-06-18",
+            "skills": null,
+            "domains": null,
+            "verificationStatus": "notChecked"
+          },
+          {
+            "name": "x402",
+            "endpoint": "https://agents.quantjourney.cloud/.well-known/x402",
+            "version": "2",
+            "skills": null,
+            "domains": null,
+            "verificationStatus": "notChecked"
+          }
+        ],
+        "usedLegacyEndpointsField": false
+      },
+      "advertisedServices": [
+        {
+          "name": "web",
+          "endpoint": "https://agents.quantjourney.cloud/",
+          "version": null,
+          "skills": null,
+          "domains": null,
+          "verificationStatus": "notChecked"
+        },
+        {
+          "name": "A2A",
+          "endpoint": "https://agents.quantjourney.cloud/.well-known/agent-card.json",
+          "version": "1.0",
+          "skills": null,
+          "domains": null,
+          "verificationStatus": "notChecked"
+        },
+        {
+          "name": "MCP",
+          "endpoint": "https://api.quantjourney.cloud/mcp",
+          "version": "2025-06-18",
+          "skills": null,
+          "domains": null,
+          "verificationStatus": "notChecked"
+        },
+        {
+          "name": "x402",
+          "endpoint": "https://agents.quantjourney.cloud/.well-known/x402",
+          "version": "2",
+          "skills": null,
+          "domains": null,
+          "verificationStatus": "notChecked"
+        }
+      ]
+    }
+  ]
+}

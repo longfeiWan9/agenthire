@@ -14,7 +14,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check:rpc": "tsx src/scripts/check-rpc.ts",
-    "read:agents": "tsx src/scripts/read-agents.ts"
+    "read:agents": "tsx src/scripts/read-agents.ts",
+    "read:metadata": "tsx src/scripts/read-metadata.ts"
   },
   "dependencies": {
     "viem": "2.58.0"
