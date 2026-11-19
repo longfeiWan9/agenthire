@@ -12,7 +12,8 @@
     "dev": "tsx src/scripts/hello.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "check:rpc": "tsx src/scripts/check-rpc.ts"
   },
   "dependencies": {
     "viem": "2.58.0"
