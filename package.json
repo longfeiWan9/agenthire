@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check:rpc": "tsx src/scripts/check-rpc.ts"
+    "check:rpc": "tsx src/scripts/check-rpc.ts",
+    "read:agents": "tsx src/scripts/read-agents.ts"
   },
   "dependencies": {
     "viem": "2.58.0"
