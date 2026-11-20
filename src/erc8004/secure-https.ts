@@ -78,6 +78,28 @@ export type SecureHttpsDeps = {
   readonly lookup?: DnsLookupFn;
   readonly request?: HttpsRequestFn;
   readonly now?: () => number;
+  /** Override Accept header (discovery uses application/json only). */
+  readonly accept?: string;
+  /** Override User-Agent string. */
+  readonly userAgent?: string;
+};
+
+/**
+ * Transport-level HTTPS response including non-2xx statuses.
+ * Redirects still fail closed (never followed).
+ */
+export type SecureHttpsExchange = {
+  readonly url: string;
+  readonly finalUrl: string;
+  readonly statusCode: number;
+  readonly headers: Readonly<Record<string, string | string[] | undefined>>;
+  readonly contentType: string | null;
+  readonly body: Buffer;
+  readonly sha256: string;
+  readonly byteLength: number;
+  readonly resolvedAddresses: readonly ResolvedAddress[];
+  readonly pinnedAddress: ResolvedAddress;
+  readonly elapsedMs: number;
 };
 
 /** Parse dotted IPv4 into 32-bit unsigned int; null if invalid. */
@@ -399,19 +421,33 @@ function readBodyWithLimit(
   });
 }
 
+function headerContentType(
+  headers: Readonly<Record<string, string | string[] | undefined>>,
+): string | null {
+  const contentTypeHeader = headers["content-type"];
+  if (typeof contentTypeHeader === "string") return contentTypeHeader;
+  if (Array.isArray(contentTypeHeader)) return contentTypeHeader[0] ?? null;
+  return null;
+}
+
 /**
  * Perform one HTTPS GET with DNS validation + connection-time IP pinning.
- * Does not follow redirects. Does not send cookies or credentials.
+ * Returns the response body for any non-redirect status (including 4xx/5xx).
+ * Does not follow redirects. Does not send cookies or credentials. No retries.
  */
-export async function secureHttpsGet(
+export async function secureHttpsExchange(
   rawUrl: string,
   deps: SecureHttpsDeps = {},
-): Promise<SecureHttpsSuccess> {
+): Promise<SecureHttpsExchange> {
   const url = assertHttpsUrl(rawUrl);
   const lookup = deps.lookup ?? defaultDnsLookup;
   const request = deps.request ?? https.request;
   const now = deps.now ?? (() => Date.now());
   const started = now();
+  const accept =
+    deps.accept ?? "application/json, text/plain;q=0.9, */*;q=0.1";
+  const userAgent =
+    deps.userAgent ?? "AgentHire-registration-metadata/0.1 (READ_ONLY)";
 
   let addresses: readonly ResolvedAddress[];
   try {
@@ -426,7 +462,7 @@ export async function secureHttpsGet(
   // not a post-connect DNS re-check on a naive global fetch.
   const hostHeader = url.port ? `${url.hostname}:${url.port}` : url.hostname;
 
-  return new Promise<SecureHttpsSuccess>((resolve, reject) => {
+  return new Promise<SecureHttpsExchange>((resolve, reject) => {
     let settled = false;
     const finish = (error: unknown) => {
       if (settled) return;
@@ -447,8 +483,8 @@ export async function secureHttpsGet(
         timeout: SECURE_FETCH_TIMEOUT_MS,
         headers: {
           Host: hostHeader,
-          Accept: "application/json, text/plain;q=0.9, */*;q=0.1",
-          "User-Agent": "AgentHire-registration-metadata/0.1 (READ_ONLY)",
+          Accept: accept,
+          "User-Agent": userAgent,
           Connection: "close",
           // Explicitly omit Cookie / Authorization.
         },
@@ -456,11 +492,17 @@ export async function secureHttpsGet(
       (res) => {
         const status = res.statusCode ?? 0;
         if (status >= 300 && status < 400) {
+          const location =
+            typeof res.headers.location === "string"
+              ? res.headers.location
+              : Array.isArray(res.headers.location)
+                ? (res.headers.location[0] ?? "(none)")
+                : "(none)";
           res.resume();
           finish(
             new SecureFetchError(
               "redirect",
-              `Refusing redirect (${status}) to ${res.headers.location ?? "(none)"}`,
+              `Refusing redirect (${status}) to ${location}`,
             ),
           );
           return;
@@ -469,30 +511,14 @@ export async function secureHttpsGet(
         void readBodyWithLimit(res, SECURE_FETCH_MAX_BYTES)
           .then((body) => {
             if (settled) return;
-            if (status < 200 || status >= 300) {
-              finish(
-                new SecureFetchError(
-                  "httpError",
-                  `HTTP ${status} for ${url.toString()}`,
-                ),
-              );
-              return;
-            }
-            const contentTypeHeader = res.headers["content-type"];
-            const contentType =
-              typeof contentTypeHeader === "string"
-                ? contentTypeHeader
-                : Array.isArray(contentTypeHeader)
-                  ? (contentTypeHeader[0] ?? null)
-                  : null;
             const sha256 = createHash("sha256").update(body).digest("hex");
             settled = true;
             resolve({
-              ok: true,
               url: rawUrl,
               finalUrl: url.toString(),
               statusCode: status,
-              contentType,
+              headers: { ...res.headers },
+              contentType: headerContentType(res.headers),
               body,
               sha256,
               byteLength: body.length,
@@ -516,6 +542,37 @@ export async function secureHttpsGet(
     req.on("error", finish);
     req.end();
   });
+}
+
+/**
+ * Perform one HTTPS GET with DNS validation + connection-time IP pinning.
+ * Does not follow redirects. Does not send cookies or credentials.
+ * Non-2xx statuses throw SecureFetchError(httpError) after the body is read.
+ */
+export async function secureHttpsGet(
+  rawUrl: string,
+  deps: SecureHttpsDeps = {},
+): Promise<SecureHttpsSuccess> {
+  const exchange = await secureHttpsExchange(rawUrl, deps);
+  if (exchange.statusCode < 200 || exchange.statusCode >= 300) {
+    throw new SecureFetchError(
+      "httpError",
+      `HTTP ${exchange.statusCode} for ${exchange.finalUrl}`,
+    );
+  }
+  return {
+    ok: true,
+    url: exchange.url,
+    finalUrl: exchange.finalUrl,
+    statusCode: exchange.statusCode,
+    contentType: exchange.contentType,
+    body: exchange.body,
+    sha256: exchange.sha256,
+    byteLength: exchange.byteLength,
+    resolvedAddresses: exchange.resolvedAddresses,
+    pinnedAddress: exchange.pinnedAddress,
+    elapsedMs: exchange.elapsedMs,
+  };
 }
 
 /**

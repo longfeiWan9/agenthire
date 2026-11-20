@@ -1,0 +1,762 @@
+{
+  "schemaVersion": "1.0",
+  "mode": "READ_ONLY / NO_SIGNING / APPROVED_DISCOVERY_GET_ONLY",
+  "kind": "discoveryInspectionEvidence",
+  "allowlistVersion": "1.0",
+  "runMode": "approved-live",
+  "capturedAt": "2026-11-20T08:02:50.795Z",
+  "source": "live-https-allowlisted",
+  "targetCount": 4,
+  "successCount": 2,
+  "approvedUrls": [
+    "https://onchainagentintel.io/.well-known/agent-card.json",
+    "https://agent402.tools/.well-known/agent-card.json",
+    "https://agent402.tools/openapi.json",
+    "https://agents.quantjourney.cloud/.well-known/agent-card.json"
+  ],
+  "evidences": [
+    {
+      "schemaVersion": "1.0",
+      "discoveryId": "DISC-001",
+      "provider": "Agent Zero",
+      "approvedUrl": "https://onchainagentintel.io/.well-known/agent-card.json",
+      "sanitizedUrl": "https://onchainagentintel.io/.well-known/agent-card.json",
+      "documentKind": "agent-card",
+      "method": "GET",
+      "runMode": "approved-live",
+      "status": "networkError",
+      "observedAt": "2026-11-20T08:02:50.795Z",
+      "httpStatus": null,
+      "contentType": null,
+      "contentSha256": null,
+      "byteLength": null,
+      "pinnedAddress": null,
+      "resolvedAddresses": null,
+      "elapsedMs": null,
+      "redirectLocation": null,
+      "sanitizedResponseHeaders": null,
+      "paymentRequiredObserved": false,
+      "error": "read ECONNRESET",
+      "errorClass": "connection",
+      "documentSummary": null,
+      "documentationCompatibility": null
+    },
+    {
+      "schemaVersion": "1.0",
+      "discoveryId": "DISC-002",
+      "provider": "Agent402",
+      "approvedUrl": "https://agent402.tools/.well-known/agent-card.json",
+      "sanitizedUrl": "https://agent402.tools/.well-known/agent-card.json",
+      "documentKind": "agent-card",
+      "method": "GET",
+      "runMode": "approved-live",
+      "status": "success",
+      "observedAt": "2026-11-20T08:02:50.795Z",
+      "httpStatus": 200,
+      "contentType": "application/json; charset=utf-8",
+      "contentSha256": "5e8977584d85a3622dfdf182fcd3f3ac43d2c1cd8560330105977b245d75cd68",
+      "byteLength": 1968,
+      "pinnedAddress": "104.21.37.50",
+      "resolvedAddresses": [
+        "2606:4700:3036::6815:2532",
+        "2606:4700:3037::ac43:cbf7",
+        "104.21.37.50",
+        "172.67.203.247"
+      ],
+      "elapsedMs": 1574,
+      "sanitizedResponseHeaders": {
+        "date": "Fri, 20 Nov 2026 08:02:52 GMT",
+        "content-type": "application/json; charset=utf-8",
+        "transfer-encoding": "chunked",
+        "connection": "close",
+        "access-control-allow-origin": "*",
+        "access-control-expose-headers": "PAYMENT-REQUIRED, PAYMENT-RESPONSE, WWW-Authenticate, Payment-Receipt, Agent402-Receipt, X-Cache, X-Credits-Balance, X-Metered-Usd, X-Idempotent-Replay, X-Replayed-Answer, X-Agent402-Allowance, X-Agent402-Reasoning-Adjusted, Retry-After, Mcp-Session-Id, Mc…[truncated]",
+        "cache-control": "public, max-age=900",
+        "nel": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}",
+        "content-security-policy": "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self'; connect-src 'self' https:; frame-src 'self' https://live.agent402.tools; object-src 'none'; base-uri 'self'; form-action 'self' mailto:; …[truncated]",
+        "etag": "W/\"7b0-g581pkl864VY2IyphXTQhhCYoB4\"",
+        "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "server": "cloudflare",
+        "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+        "vary": "Accept-Encoding",
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "SAMEORIGIN",
+        "x-permitted-cross-domain-policies": "none",
+        "x-railway-request-id": "mSPVzJdGQcGEEBUPnPRhug",
+        "x-request-id": "429ce79e-1129-4e82-9690-edb3d8c63c73",
+        "x-railway-edge": "hkg1",
+        "x-hikari-trace": "hkg1.aebn",
+        "cf-cache-status": "DYNAMIC",
+        "report-to": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=Dhq7e%2BKQaLfmFJHtwyaD9Te4743Vqe5uK55TD%2BeFUo4aJwi%2BxiH7DnU%2Bxqf3uW6DfQWYR2aeqZxbS9UuB0Ob97Kv97xma6Ys6pzeVpZC380ts%2BxN2HUlFS%2FUoGNPrH%2FdLg%3D%3D\"}]}",
+        "cf-ray": "a5d5ef539a44d309-HKG",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      },
+      "redirectLocation": null,
+      "paymentRequiredObserved": false,
+      "error": null,
+      "errorClass": null,
+      "documentSummary": {
+        "kind": "agent-card",
+        "name": "Agent402",
+        "description": "Pay-per-call web tools for autonomous agents: 621 priced endpoints settled in stablecoins (USDC, or USDG on Robinhood Chain) over x402 or MPP, free via proof of work for the pure-CPU tools, and finished reports by card. No account and no API key. The same catalog is callable over MCP at https://agent402.tools/mcp and documented at https://agent402.tools/openapi.json.",
+        "version": "2.1.0",
+        "url": "https://agent402.tools/api",
+        "protocolVersion": "0.3.0",
+        "skillCount": 5,
+        "skills": [
+          {
+            "id": "catalog-find",
+            "name": "Find a tool for a task",
+            "description": "Resolve a plain-language task to a callable endpoint with its price and input schema. Free.",
+            "tags": [
+              "discovery",
+              "search",
+              "catalog",
+              "routing"
+            ]
+          },
+          {
+            "id": "route-execute",
+            "name": "Route and execute a paid call",
+            "description": "Resolve a task, buy the result from the seller over x402, and sell it to the caller with a receipt.",
+            "tags": [
+              "routing",
+              "x402",
+              "payments",
+              "execution"
+            ]
+          },
+          {
+            "id": "llm-gateway",
+            "name": "Model calls priced per request",
+            "description": "OpenAI, Anthropic Messages and Responses wires over one endpoint, quoted per request and settled at actual usage.",
+            "tags": [
+              "llm",
+              "inference",
+              "gateway",
+              "metered"
+            ]
+          },
+          {
+            "id": "research-reports",
+            "name": "Finished research and diligence reports",
+            "description": "Company, filing, fund, token and domain reports returned as finished documents with cited sources.",
+            "tags": [
+              "research",
+              "reports",
+              "filings",
+              "diligence"
+            ]
+          },
+          {
+            "id": "x402-index",
+            "name": "The x402 seller index",
+            "description": "Who sells what across the x402 ecosystem, with settlement evidence and router eligibility per seller.",
+            "tags": [
+              "x402",
+              "index",
+              "sellers",
+              "marketplace"
+            ]
+          }
+        ],
+        "skillIds": [
+          "catalog-find",
+          "route-execute",
+          "llm-gateway",
+          "research-reports",
+          "x402-index"
+        ],
+        "capabilitiesKeys": [
+          "pushNotifications",
+          "stateTransitionHistory",
+          "streaming"
+        ],
+        "hasAdditionalInterfaces": false,
+        "rawTopLevelKeys": [
+          "capabilities",
+          "defaultInputModes",
+          "defaultOutputModes",
+          "description",
+          "documentationUrl",
+          "name",
+          "preferredTransport",
+          "protocolVersion",
+          "provider",
+          "skills",
+          "url",
+          "version"
+        ]
+      },
+      "documentationCompatibility": {
+        "mvpTaskId": "wallet-activity-summary@1.0",
+        "documentKind": "agent-card",
+        "explicitSkillMatch": false,
+        "matchedSkillIds": [],
+        "relatedHints": [],
+        "openApiOperations": [],
+        "notes": "Agent-card skills do not match wallet-activity-summary@1.0. No B4 milestone upgrade from this document.",
+        "claimsEndpointStatus": false,
+        "claimsRequestSchemaVerified": false,
+        "claimsPaymentVerified": false
+      }
+    },
+    {
+      "schemaVersion": "1.0",
+      "discoveryId": "DISC-003",
+      "provider": "Agent402",
+      "approvedUrl": "https://agent402.tools/openapi.json",
+      "sanitizedUrl": "https://agent402.tools/openapi.json",
+      "documentKind": "openapi",
+      "method": "GET",
+      "runMode": "approved-live",
+      "status": "oversized",
+      "observedAt": "2026-11-20T08:02:50.795Z",
+      "httpStatus": null,
+      "contentType": null,
+      "contentSha256": null,
+      "byteLength": null,
+      "pinnedAddress": null,
+      "resolvedAddresses": null,
+      "elapsedMs": null,
+      "redirectLocation": null,
+      "sanitizedResponseHeaders": null,
+      "paymentRequiredObserved": false,
+      "error": "Response exceeded 262144 byte limit",
+      "errorClass": "oversized",
+      "documentSummary": null,
+      "documentationCompatibility": null
+    },
+    {
+      "schemaVersion": "1.0",
+      "discoveryId": "DISC-004",
+      "provider": "QuantJourney",
+      "approvedUrl": "https://agents.quantjourney.cloud/.well-known/agent-card.json",
+      "sanitizedUrl": "https://agents.quantjourney.cloud/.well-known/agent-card.json",
+      "documentKind": "agent-card",
+      "method": "GET",
+      "runMode": "approved-live",
+      "status": "success",
+      "observedAt": "2026-11-20T08:02:50.795Z",
+      "httpStatus": 200,
+      "contentType": "application/json",
+      "contentSha256": "7e833fa17108121af586ac205e8e6ac34bcb6cd8702004c689b40cc624845c08",
+      "byteLength": 20406,
+      "pinnedAddress": "104.26.14.81",
+      "resolvedAddresses": [
+        "2606:4700:20::681a:e51",
+        "2606:4700:20::ac43:44ce",
+        "2606:4700:20::681a:f51",
+        "104.26.14.81",
+        "104.26.15.81",
+        "172.67.68.206"
+      ],
+      "elapsedMs": 2481,
+      "sanitizedResponseHeaders": {
+        "date": "Fri, 20 Nov 2026 08:02:56 GMT",
+        "content-type": "application/json",
+        "content-length": "20406",
+        "connection": "close",
+        "cache-control": "public, max-age=300",
+        "content-security-policy": "default-src 'self'; style-src 'self'; script-src 'self' 'sha256-pb0Yr7fUNKyzrc9xzyX9zc/pFiw8m2elRKdmGZ0H8Zc=' 'sha256-v7ORBTEQLg5WKaKNNroNW9erWPyDfxx9sSLvAnYcdog=' 'sha256-XhCv2MGrzh4/WdnOg+O1SUv3mAjSdyUw3Aq93mZ9Ss8=' 'sha256-cYW42jTKirqeRaOmLszFXw2q5LXcRR…[truncated]",
+        "etag": "\"965f7f07b70ce29b2057ae4bc28ec3fd9e3de706f7750b2942c29fb96a7cd20f\"",
+        "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), fullscreen=(self)",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "server": "cloudflare",
+        "strict-transport-security": "max-age=31536000",
+        "x-content-type-options": "nosniff",
+        "x-frame-options": "DENY",
+        "x-robots-tag": "noindex, nofollow",
+        "cf-cache-status": "DYNAMIC",
+        "report-to": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=OtYv945YflCR7I9cEk02dF0Q%2BRwcgEXvLXbp3RFnIZFTQSN2Iba6N8DxXBLM703dqDvJrHXlnVYZifkdRT%2BXYBxmQbgIyTwnauOwG3mXAQmSKvgHCjpgYAkNCv%2BFs7qJ9%2FtwPnTB5kIVtM4%3D\"}]}",
+        "nel": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}",
+        "cf-ray": "a5d5ef654c2b02b6-HKG"
+      },
+      "redirectLocation": null,
+      "paymentRequiredObserved": false,
+      "error": null,
+      "errorClass": null,
+      "documentSummary": {
+        "kind": "agent-card",
+        "name": "QuantJourney Research Agent Fabric",
+        "description": "Machine-payable, evidence-backed financial research for agents. 35 deterministic MCP-backed bounded queries are catalogued. Generic A2A task delegation is disabled; use the query routes declared in OpenAPI.",
+        "version": "0.27.2",
+        "url": null,
+        "protocolVersion": null,
+        "skillCount": 35,
+        "skills": [
+          {
+            "id": "qj-company-snapshot-lite",
+            "name": "Company Snapshot Lite",
+            "description": "Return a free, bounded factual ticker snapshot with price, selected metrics, freshness and explicit coverage gaps.",
+            "tags": [
+              "equity",
+              "snapshot",
+              "price",
+              "metrics"
+            ]
+          },
+          {
+            "id": "qj-earnings-preview",
+            "name": "Earnings Preview",
+            "description": "Prepare an evidence-backed earnings preview with consensus, revisions, dispersion, historical surprises, valuation context and explicit review questions.",
+            "tags": [
+              "earnings",
+              "estimates",
+              "revisions",
+              "valuation"
+            ]
+          },
+          {
+            "id": "qj-earnings-recap",
+            "name": "Earnings Recap",
+            "description": "Reconcile the latest reported earnings with consensus, estimate changes, adjusted-close reactions, SPY-adjusted CAR and explicit thesis-review questions.",
+            "tags": [
+              "earnings",
+              "recap",
+              "surprise",
+              "event-study"
+            ]
+          },
+          {
+            "id": "qj-congress-gov-signals",
+            "name": "Congress and Government Signals",
+            "description": "Combine congressional disclosures and government-contract evidence with disclosure-lag warnings.",
+            "tags": [
+              "congress",
+              "government",
+              "contracts",
+              "policy"
+            ]
+          },
+          {
+            "id": "qj-sec-company-identity",
+            "name": "SEC Company Identity",
+            "description": "Resolve a ticker or company name to official SEC identity and exchange fields.",
+            "tags": [
+              "sec",
+              "identity",
+              "cik",
+              "public-data"
+            ]
+          },
+          {
+            "id": "qj-sec-latest-filing",
+            "name": "SEC Latest Filing",
+            "description": "Return the latest official SEC submission for a ticker and bounded form type.",
+            "tags": [
+              "sec",
+              "filing",
+              "edgar",
+              "public-data"
+            ]
+          },
+          {
+            "id": "qj-sec-company-facts-compact",
+            "name": "SEC Company Facts Compact",
+            "description": "Project selected current SEC XBRL facts into a small evidence envelope.",
+            "tags": [
+              "sec",
+              "xbrl",
+              "fundamentals",
+              "public-data"
+            ]
+          },
+          {
+            "id": "qj-gleif-entity-lookup",
+            "name": "GLEIF Entity Lookup",
+            "description": "Resolve an entity name or exact LEI against the official GLEIF index.",
+            "tags": [
+              "gleif",
+              "lei",
+              "entity",
+              "public-data"
+            ]
+          },
+          {
+            "id": "qj-treasury-yield-curve-latest",
+            "name": "Treasury Yield Curve Latest",
+            "description": "Return one latest bounded U.S. Treasury par-yield curve observation.",
+            "tags": [
+              "treasury",
+              "rates",
+              "yield-curve",
+              "public-data"
+            ]
+          },
+          {
+            "id": "qj-overnight-rates-latest",
+            "name": "Overnight Rates Latest",
+            "description": "Return the latest bounded SOFR, EFFR and related official reference-rate observations.",
+            "tags": [
+              "ny-fed",
+              "sofr",
+              "effr",
+              "rates",
+              "public-data"
+            ]
+          },
+          {
+            "id": "qj-sec-filing-delta",
+            "name": "SEC Filing Delta",
+            "description": "Compare selected SEC XBRL facts between the latest two filings of one form type.",
+            "tags": [
+              "sec",
+              "filing",
+              "xbrl",
+              "delta",
+              "public-data"
+            ]
+          },
+          {
+            "id": "qj-government-demand-packet",
+            "name": "Government Demand Packet",
+            "description": "Combine bounded award rollups and materialized contract signals for one ticker.",
+            "tags": [
+              "government",
+              "contracts",
+              "usaspend",
+              "evidence"
+            ]
+          },
+          {
+            "id": "qj-security-history",
+            "name": "Security Price History",
+            "description": "Return bounded normalized daily adjusted-close history for one public-equity ticker, with dates, currency, source and freshness. It is not a live quote.",
+            "tags": [
+              "equity",
+              "prices",
+              "history"
+            ]
+          },
+          {
+            "id": "qj-security-screen",
+            "name": "Security Screen",
+            "description": "Screen U.S. public companies or a named U.S. index using a small allowlist of precomputed financial metrics. ETFs and funds are excluded; arbitrary SQL is never accepted.",
+            "tags": [
+              "equity",
+              "screen",
+              "metrics"
+            ]
+          },
+          {
+            "id": "qj-insider-activity",
+            "name": "SEC Insider Filing Activity",
+            "description": "Return recent official SEC Form 4 filing metadata for one issuer. This version reports filing activity and accessions only; it does not claim parsed purchases, sales or ownership changes.",
+            "tags": [
+              "sec",
+              "form-4",
+              "insiders",
+              "public-data"
+            ]
+          },
+          {
+            "id": "qj-short-interest-state",
+            "name": "Short Interest State",
+            "description": "Return bounded official FINRA consolidated short-interest observations and optional Nasdaq Trader Reg SHO threshold-list membership. Semi-monthly short interest is not daily short volume.",
+            "tags": [
+              "finra",
+              "short-interest",
+              "reg-sho",
+              "public-data"
+            ]
+          },
+          {
+            "id": "qj-security-technicals",
+            "name": "Security Technical State",
+            "description": "Return latest precomputed technical indicators from an explicit indicator-family allowlist. Use for structured technical state, not a trading signal or live quote.",
+            "tags": [
+              "equity",
+              "technicals",
+              "signals"
+            ]
+          },
+          {
+            "id": "qj-market-regime",
+            "name": "Market Regime Context",
+            "description": "Return the latest compact market-risk context computed by QJ Analytics from governed Warehouse inputs. It is descriptive evidence, not a forecast or allocation instruction.",
+            "tags": [
+              "market",
+              "regime",
+              "risk",
+              "macro"
+            ]
+          },
+          {
+            "id": "qj-simulate-trade",
+            "name": "Stateless Trade Risk Simulation",
+            "description": "Estimate before, after and delta portfolio volatility, effective number of bets and fractional risk contribution for one bounded hypothetical long-only trade. No order or portfolio state is created.",
+            "tags": [
+              "portfolio",
+              "risk",
+              "what-if",
+              "stateless"
+            ]
+          },
+          {
+            "id": "qj-portfolio-normalize",
+            "name": "Portfolio Normalize",
+            "description": "Resolve up to 25 unique long-only tickers and return normalized weights, identity coverage and concentration without creating a stored portfolio.",
+            "tags": [
+              "portfolio",
+              "stateless",
+              "identity",
+              "weights"
+            ]
+          },
+          {
+            "id": "qj-portfolio-exposure",
+            "name": "Portfolio Exposure",
+            "description": "Return compact sector, country, asset-class and supplied-currency exposure for an inline portfolio.",
+            "tags": [
+              "portfolio",
+              "stateless",
+              "sector",
+              "country",
+              "currency"
+            ]
+          },
+          {
+            "id": "qj-portfolio-volatility",
+            "name": "Portfolio Volatility",
+            "description": "Estimate bounded annualized volatility from authorized aligned daily prices or returns.",
+            "tags": [
+              "portfolio",
+              "stateless",
+              "volatility",
+              "risk"
+            ]
+          },
+          {
+            "id": "qj-portfolio-var-cvar",
+            "name": "Portfolio VaR and CVaR",
+            "description": "Calculate bounded portfolio VaR and CVaR from authorized aligned daily prices or returns.",
+            "tags": [
+              "portfolio",
+              "stateless",
+              "var",
+              "cvar",
+              "risk"
+            ]
+          },
+          {
+            "id": "qj-portfolio-drawdown",
+            "name": "Portfolio Drawdown",
+            "description": "Calculate bounded portfolio and position drawdowns from authorized aligned daily prices or returns.",
+            "tags": [
+              "portfolio",
+              "stateless",
+              "drawdown",
+              "risk"
+            ]
+          },
+          {
+            "id": "qj-portfolio-benchmark-risk",
+            "name": "Portfolio Benchmark Risk",
+            "description": "Estimate portfolio beta, correlation and regression evidence versus one benchmark.",
+            "tags": [
+              "portfolio",
+              "stateless",
+              "benchmark",
+              "beta",
+              "correlation"
+            ]
+          },
+          {
+            "id": "qj-portfolio-factor-exposure",
+            "name": "Portfolio Factor Exposure",
+            "description": "Estimate bounded CAPM, Fama-French 3 or Fama-French 5 factor exposure.",
+            "tags": [
+              "portfolio",
+              "stateless",
+              "factors",
+              "risk"
+            ]
+          },
+          {
+            "id": "qj-portfolio-liquidity",
+            "name": "Portfolio Liquidity",
+            "description": "Estimate compact position liquidity using observed price-volume history.",
+            "tags": [
+              "portfolio",
+              "stateless",
+              "liquidity",
+              "volume",
+              "risk"
+            ]
+          },
+          {
+            "id": "qj-portfolio-events",
+            "name": "Portfolio Events",
+            "description": "Return bounded upcoming-event exposure and event-risk summaries.",
+            "tags": [
+              "portfolio",
+              "stateless",
+              "events",
+              "catalysts",
+              "risk"
+            ]
+          },
+          {
+            "id": "qj-portfolio-signals",
+            "name": "Portfolio Signals",
+            "description": "Return compact precomputed technical, congressional and government-contract signals for the largest supplied positions.",
+            "tags": [
+              "portfolio",
+              "stateless",
+              "signals",
+              "technicals",
+              "government"
+            ]
+          },
+          {
+            "id": "qj-portfolio-scenario",
+            "name": "Portfolio Scenario",
+            "description": "Run one named or bounded custom QJ Risk scenario over an inline portfolio.",
+            "tags": [
+              "portfolio",
+              "stateless",
+              "scenario",
+              "stress",
+              "risk"
+            ]
+          },
+          {
+            "id": "qj-portfolio-position-risk",
+            "name": "Portfolio Position Risk",
+            "description": "Return compact per-position volatility, beta, correlation and drawdown evidence.",
+            "tags": [
+              "portfolio",
+              "stateless",
+              "positions",
+              "beta",
+              "drawdown",
+              "risk"
+            ]
+          },
+          {
+            "id": "qj-portfolio-performance",
+            "name": "Portfolio Performance",
+            "description": "Calculate whole-portfolio hypothetical constant-weight performance, Sharpe, Sortino and Calmar. Not account TWR/MWR.",
+            "tags": [
+              "portfolio",
+              "stateless",
+              "performance",
+              "research"
+            ]
+          },
+          {
+            "id": "qj-portfolio-correlations",
+            "name": "Portfolio Correlations",
+            "description": "Calculate the full Pearson or Spearman matrix of aligned daily asset returns; constant-series correlations are null.",
+            "tags": [
+              "portfolio",
+              "stateless",
+              "correlations",
+              "research"
+            ]
+          },
+          {
+            "id": "qj-portfolio-optimization",
+            "name": "Portfolio Optimization",
+            "description": "Calculate stateless long-only fully-invested weights using min_variance, risk_parity or max_sharpe. Research only, no orders or persistence.",
+            "tags": [
+              "portfolio",
+              "stateless",
+              "optimization",
+              "research"
+            ]
+          },
+          {
+            "id": "qj-portfolio-simulation",
+            "name": "Portfolio Simulation",
+            "description": "Simulate a constant-weight portfolio with calibrated lognormal GBM or IID historical bootstrap. Seeded, bounded, not a forecast.",
+            "tags": [
+              "portfolio",
+              "stateless",
+              "simulation",
+              "research"
+            ]
+          }
+        ],
+        "skillIds": [
+          "qj-company-snapshot-lite",
+          "qj-earnings-preview",
+          "qj-earnings-recap",
+          "qj-congress-gov-signals",
+          "qj-sec-company-identity",
+          "qj-sec-latest-filing",
+          "qj-sec-company-facts-compact",
+          "qj-gleif-entity-lookup",
+          "qj-treasury-yield-curve-latest",
+          "qj-overnight-rates-latest",
+          "qj-sec-filing-delta",
+          "qj-government-demand-packet",
+          "qj-security-history",
+          "qj-security-screen",
+          "qj-insider-activity",
+          "qj-short-interest-state",
+          "qj-security-technicals",
+          "qj-market-regime",
+          "qj-simulate-trade",
+          "qj-portfolio-normalize",
+          "qj-portfolio-exposure",
+          "qj-portfolio-volatility",
+          "qj-portfolio-var-cvar",
+          "qj-portfolio-drawdown",
+          "qj-portfolio-benchmark-risk",
+          "qj-portfolio-factor-exposure",
+          "qj-portfolio-liquidity",
+          "qj-portfolio-events",
+          "qj-portfolio-signals",
+          "qj-portfolio-scenario",
+          "qj-portfolio-position-risk",
+          "qj-portfolio-performance",
+          "qj-portfolio-correlations",
+          "qj-portfolio-optimization",
+          "qj-portfolio-simulation"
+        ],
+        "capabilitiesKeys": [
+          "a2aTaskDelegation",
+          "boundedQueryExecution",
+          "callerDataCompute",
+          "extendedAgentCard",
+          "extensions",
+          "managedDataExecution",
+          "publicDataExecution",
+          "pushNotifications",
+          "streaming"
+        ],
+        "hasAdditionalInterfaces": false,
+        "rawTopLevelKeys": [
+          "capabilities",
+          "defaultInputModes",
+          "defaultOutputModes",
+          "description",
+          "documentationUrl",
+          "iconUrl",
+          "name",
+          "provider",
+          "securityRequirements",
+          "securitySchemes",
+          "skills",
+          "supportedInterfaces",
+          "version"
+        ]
+      },
+      "documentationCompatibility": {
+        "mvpTaskId": "wallet-activity-summary@1.0",
+        "documentKind": "agent-card",
+        "explicitSkillMatch": false,
+        "matchedSkillIds": [],
+        "relatedHints": [],
+        "openApiOperations": [],
+        "notes": "Agent-card skills do not match wallet-activity-summary@1.0. No B4 milestone upgrade from this document.",
+        "claimsEndpointStatus": false,
+        "claimsRequestSchemaVerified": false,
+        "claimsPaymentVerified": false
+      }
+    }
+  ]
+}
