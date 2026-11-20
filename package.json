@@ -18,6 +18,7 @@
     "read:metadata": "tsx src/scripts/read-metadata.ts",
     "build:catalog": "tsx src/scripts/build-catalog.ts",
     "plan:inspections": "tsx src/scripts/plan-inspections.ts",
+    "plan:service-inspections": "tsx src/scripts/plan-service-inspections.ts",
     "inspect:discovery": "tsx src/scripts/inspect-discovery.ts"
   },
   "dependencies": {

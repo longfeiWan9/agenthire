@@ -1,0 +1,107 @@
+{
+  "schemaVersion": "1.0",
+  "mode": "READ_ONLY / NO_SIGNING / NO_PAYMENT / NO_NEW_PROVIDER_REQUESTS",
+  "kind": "proposedServiceInspections",
+  "assessmentVersion": "1.0",
+  "mvpTaskId": "wallet-activity-summary@1.0",
+  "source": {
+    "catalogPath": "docs/evidence/provider-catalog.json",
+    "catalogSnapshotAsOf": "2026-11-19T09:45:48.912Z",
+    "discoveryEvidencePath": "docs/day4/evidence/discovery-inspection.json",
+    "discoveryCapturedAt": "2026-11-20T08:02:50.795Z"
+  },
+  "proposalCount": 3,
+  "maxProposals": 3,
+  "proposals": [
+    {
+      "proposalId": "PSI-001",
+      "providerId": "eip155:8453/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432/94639",
+      "serviceId": "x402-b002ca7b39879b45",
+      "exactUrl": "https://agent402.tools/.well-known/x402",
+      "method": "GET",
+      "headers": {
+        "Accept": "application/json"
+      },
+      "bodyTemplate": null,
+      "expectedUnsignedBehavior": "Unsigned discovery GET may return an x402 configuration / offer document or an HTTP 402 Payment Required envelope. Treat body/headers as untrusted data. No PAYMENT-SIGNATURE.",
+      "taskRelevance": "unknown",
+      "documentationEvidenceIds": [
+        "ev-registryRead-b5e040c8d4132406",
+        "ev-metadataFetch-0c61f5a4c4474c99",
+        "DISC-002"
+      ],
+      "outstandingSafetyQuestions": [
+        "Confirm GET is safe and idempotent for this exact path",
+        "Confirm response ≤256 KiB and no redirect follow",
+        "Confirm no cookies/Authorization attached",
+        "Sepolia vs Mainnet offer fields still require policy eval after capture",
+        "Does not establish wallet-activity-summary@1.0 compatibility"
+      ],
+      "approvedForNetworkExecution": false,
+      "worth": "Provider advertises x402; agent-card exposes PAYMENT-REQUIRED response headers capability; .well-known/x402 never contacted in D4.3a",
+      "sideEffectRisk": "Low if true static discovery document; unknown if endpoint triggers metering — fail closed, no retries",
+      "unsignedChallengePotential": "May yield parsable unsigned challenge or payment metadata for offline policy eval",
+      "remainingAuthorization": "Human must set approvedForNetworkExecution true for this exact URL/method only"
+    },
+    {
+      "proposalId": "PSI-002",
+      "providerId": "eip155:84532/0x8004A818BFB912233c491871b3d84c89A494BD9e/9136",
+      "serviceId": "x402-4b0816487b68c62a",
+      "exactUrl": "https://agents.quantjourney.cloud/.well-known/x402",
+      "method": "GET",
+      "headers": {
+        "Accept": "application/json"
+      },
+      "bodyTemplate": null,
+      "expectedUnsignedBehavior": "Unsigned discovery GET may return x402 v2 metadata or 402/503. Historical research mentioned 503 x402_not_configured — do not invent current status. No signing.",
+      "taskRelevance": "unknown",
+      "documentationEvidenceIds": [
+        "ev-registryRead-baca02c69a6eef41",
+        "ev-metadataFetch-7b0f459453e4750d",
+        "DISC-004"
+      ],
+      "outstandingSafetyQuestions": [
+        "Confirm GET-only and no side effects",
+        "Registration on Sepolia ≠ payment network proof — still parse/policy separately",
+        "Prior 503 is historical only; live outcome unknown",
+        "No MVP task skill on agent-card — payment doc ≠ task compatibility"
+      ],
+      "approvedForNetworkExecution": false,
+      "worth": "Catalog service description explicitly says x402 (v2); endpoint never contacted; needed to observe offers",
+      "sideEffectRisk": "Unknown; treat as discovery document with streaming size cap",
+      "unsignedChallengePotential": "Possible unsigned x402 v2 document or challenge for offline parser/policy",
+      "remainingAuthorization": "Human must approve this exact URL/method; no sibling path expansion"
+    },
+    {
+      "proposalId": "PSI-003",
+      "providerId": "eip155:8453/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432/94639",
+      "serviceId": "openapi-c6e4e0d8beb343e8",
+      "exactUrl": "https://agent402.tools/openapi.json",
+      "method": "GET",
+      "headers": {
+        "Accept": "application/json"
+      },
+      "bodyTemplate": null,
+      "expectedUnsignedBehavior": "Previous D4.3a GET aborted at 256 KiB (oversized). A future fetch requires separate authorization to raise the size cap for this exact URL only. No operation execution from OpenAPI paths.",
+      "taskRelevance": "unknown",
+      "documentationEvidenceIds": [
+        "ev-registryRead-b5e040c8d4132406",
+        "ev-metadataFetch-0c61f5a4c4474c99",
+        "DISC-003"
+      ],
+      "outstandingSafetyQuestions": [
+        "Requires explicit size-limit raise authorization (not granted in D4.3b)",
+        "OpenAPI $ref must not be followed",
+        "Discovered operations remain unapproved",
+        "Still no proof of wallet-activity-summary@1.0"
+      ],
+      "approvedForNetworkExecution": false,
+      "worth": "Only local evidence of a large OpenAPI surface that may document priced endpoints; current body unavailable due to size cap",
+      "sideEffectRisk": "Bandwidth/DoS risk if size cap raised carelessly; keep streaming abort",
+      "unsignedChallengePotential": "Unlikely to return HTTP 402 itself; may document which operations advertise payment",
+      "remainingAuthorization": "Separate auth for size-cap raise + this exact URL; D4.3b stop forbids raising without that auth"
+    }
+  ],
+  "notes": "All proposals have approvedForNetworkExecution:false. No new provider HTTP in D4.3b. Agent Zero discovery remains inconclusive — no invented third-party URLs."
+}
+
