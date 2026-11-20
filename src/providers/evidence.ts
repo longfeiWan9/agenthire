@@ -51,6 +51,7 @@ function mapRegistryOutcome(
 ): VerificationEvidence["outcome"] {
   if (status === "success") return "passed";
   if (status === "inconclusive") return "inconclusive";
+  // partial / notFound / failed — not full identity success for join/milestone.
   return "failed";
 }
 

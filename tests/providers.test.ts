@@ -181,8 +181,76 @@ describe("incomplete service claims", () => {
     expect(services).toHaveLength(1);
     expect(incomplete.map((i) => i.reason).sort()).toEqual([
       "duplicate_service",
-      "invalid_endpoint_url",
+      "non_https_endpoint",
     ]);
+  });
+
+  it("quarantines http: and malformed endpoints from catalog services", () => {
+    const { services, incomplete } = normalizeAdvertisedServices(
+      "eip155:8453/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432/19353",
+      [
+        { name: "secure", endpoint: "https://example.com/ok" },
+        { name: "cleartext", endpoint: "http://example.com/insecure" },
+        { name: "broken", endpoint: "not-a-url" },
+      ],
+    );
+    expect(services).toHaveLength(1);
+    expect(services[0]?.endpointUrl).toBe("https://example.com/ok");
+    expect(incomplete.map((i) => i.reason).sort()).toEqual([
+      "invalid_endpoint_url",
+      "non_https_endpoint",
+    ]);
+  });
+});
+
+describe("normalize fail-closed joins", () => {
+  it("throws when registryAddress ≠ configured Identity Registry", () => {
+    expect(() =>
+      normalizeProviderRecord({
+        registry: registryFixture({
+          registryAddress: "0x1111111111111111111111111111111111111111",
+        }),
+        registryEvidenceId: "ev-bad-registry",
+      }),
+    ).toThrow(/differs from configured Identity Registry/);
+  });
+
+  it("throws on tokenURI association failure (registry vs onChain)", () => {
+    expect(() =>
+      normalizeProviderRecord({
+        registry: registryFixture(),
+        metadata: metadataFixture({
+          onChainTokenURI: "https://evil.example/agent.json",
+          approvedFetchURI: "https://evil.example/agent.json",
+        }),
+        registryEvidenceId: "ev-reg",
+        metadataEvidenceId: "ev-meta",
+      }),
+    ).toThrow(/tokenURI association failure/);
+  });
+
+  it("throws when onChainTokenURI ≠ approvedFetchURI", () => {
+    expect(() =>
+      normalizeProviderRecord({
+        registry: registryFixture(),
+        metadata: metadataFixture({
+          approvedFetchURI: "https://other.example/agent.json",
+        }),
+        registryEvidenceId: "ev-reg",
+        metadataEvidenceId: "ev-meta",
+      }),
+    ).toThrow(/onChainTokenURI !== approvedFetchURI/);
+  });
+
+  it("throws when joining metadata against non-success registry status", () => {
+    expect(() =>
+      normalizeProviderRecord({
+        registry: registryFixture({ status: "partial" }),
+        metadata: metadataFixture(),
+        registryEvidenceId: "ev-reg",
+        metadataEvidenceId: "ev-meta",
+      }),
+    ).toThrow(/metadata join requires registry status success/);
   });
 });
 

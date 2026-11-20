@@ -40,6 +40,7 @@ export type D34AgentTarget = (typeof D34_AGENT_TARGETS)[number];
 
 export type AgentIdentityStatus =
   | "success"
+  | "partial"
   | "notFound"
   | "failed"
   | "inconclusive";
@@ -396,9 +397,8 @@ function deriveStatus(input: {
     return "failed";
   }
 
-  // Soft-fail empty/missing URI or wallet method errors after owner resolved:
-  // treat as success with partial fields only when ownerOf succeeded and
-  // remaining failures are not timeouts that leave the snapshot unreliable.
+  // After ownerOf succeeds, missing/reverted tokenURI or getAgentWallet must
+  // not look like full success (metadata-join eligibility requires tokenURI).
   const softFailures = [input.tokenURIField, input.walletField].filter(
     (field) => !field.ok,
   );
@@ -407,7 +407,10 @@ function deriveStatus(input: {
     return "inconclusive";
   }
 
-  // owner present → identity exists even if URI/wallet soft-fail (revert/empty handled above).
+  if (softFailures.length > 0) {
+    return "partial";
+  }
+
   return "success";
 }
 
@@ -683,6 +686,21 @@ export function evidenceToJson(evidence: AgentIdentityEvidence): string {
 
 export function isSuccessfulLiveRead(evidence: AgentIdentityEvidence): boolean {
   return evidence.status === "success";
+}
+
+/**
+ * Metadata join eligibility requires a successful tokenURI field read and
+ * full registry success — ownerOf alone is not enough.
+ */
+export function isMetadataJoinEligible(
+  evidence: AgentIdentityEvidence,
+): boolean {
+  return (
+    evidence.status === "success" &&
+    evidence.fields.tokenURI.ok &&
+    typeof evidence.tokenURI === "string" &&
+    evidence.tokenURI.length > 0
+  );
 }
 
 export function countSuccessfulLiveReads(

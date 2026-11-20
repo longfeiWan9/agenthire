@@ -1,0 +1,50 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline:
+    name: typecheck / test / catalog
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+
+      - name: Enable Corepack (packageManager pin)
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.15.9 --activate
+          pnpm --version
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Deterministic build:catalog
+        run: |
+          pnpm build:catalog
+          cp docs/evidence/provider-catalog.json /tmp/provider-catalog.a.json
+          cp docs/evidence/provider-verification.json /tmp/provider-verification.a.json
+          cp docs/evidence/provider-catalog-diagnostics.json /tmp/provider-catalog-diagnostics.a.json
+          pnpm build:catalog
+          cmp docs/evidence/provider-catalog.json /tmp/provider-catalog.a.json
+          cmp docs/evidence/provider-verification.json /tmp/provider-verification.a.json
+          cmp docs/evidence/provider-catalog-diagnostics.json /tmp/provider-catalog-diagnostics.a.json

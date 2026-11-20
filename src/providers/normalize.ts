@@ -148,12 +148,16 @@ export function buildServiceId(name: string, endpointUrl: string): string {
   return `${slug || "service"}-${digest}`;
 }
 
-function isValidEndpointUrl(raw: string): boolean {
+/** Catalog services accept HTTPS only; http:/malformed → incomplete claims. */
+function classifyEndpointUrl(
+  raw: string,
+): "https" | "non_https" | "invalid" {
   try {
     const url = new URL(raw);
-    return url.protocol === "https:" || url.protocol === "http:";
+    if (url.protocol === "https:") return "https";
+    return "non_https";
   } catch {
-    return false;
+    return "invalid";
   }
 }
 
@@ -186,10 +190,14 @@ export function normalizeAdvertisedServices(
       continue;
     }
 
-    if (!isValidEndpointUrl(endpoint)) {
+    const endpointKind = classifyEndpointUrl(endpoint);
+    if (endpointKind !== "https") {
       incomplete.push({
         providerId,
-        reason: "invalid_endpoint_url",
+        reason:
+          endpointKind === "non_https"
+            ? "non_https_endpoint"
+            : "invalid_endpoint_url",
         claim,
       });
       continue;
@@ -266,8 +274,8 @@ export function normalizeProviderRecord(input: {
     registryAddress.toLowerCase() !==
     expectedNetwork.identityRegistry.toLowerCase()
   ) {
-    notes.push(
-      `registryAddress ${registryAddress} differs from configured ${expectedNetwork.identityRegistry}`,
+    throw new Error(
+      `registryAddress ${registryAddress} differs from configured Identity Registry ${expectedNetwork.identityRegistry}`,
     );
   }
 
@@ -288,6 +296,18 @@ export function normalizeProviderRecord(input: {
 
   const metadata = input.metadata;
   if (metadata) {
+    // Metadata join requires full registry success + usable tokenURI.
+    if (registry.status !== "success") {
+      throw new Error(
+        `metadata join requires registry status success, got ${registry.status} for ${providerId}`,
+      );
+    }
+    if (!registry.tokenURI) {
+      throw new Error(
+        `metadata join requires registry tokenURI for ${providerId}`,
+      );
+    }
+
     if (
       identityKey(metadata.chainId, metadata.registryAddress, metadata.agentId) !==
       identityKey(registry.chainId, registry.registryAddress, registry.agentId)
@@ -297,21 +317,15 @@ export function normalizeProviderRecord(input: {
       );
     }
 
-    // URI association: metadata fetch must match on-chain tokenURI when both present.
-    if (
-      registry.tokenURI &&
-      metadata.onChainTokenURI &&
-      registry.tokenURI !== metadata.onChainTokenURI
-    ) {
-      notes.push(
-        `tokenURI mismatch: registry=${registry.tokenURI} metadata.onChain=${metadata.onChainTokenURI}`,
+    // URI association is join failure, not soft joinNotes.
+    if (registry.tokenURI !== metadata.onChainTokenURI) {
+      throw new Error(
+        `tokenURI association failure: registry=${registry.tokenURI} metadata.onChain=${metadata.onChainTokenURI}`,
       );
     }
-    if (
-      metadata.onChainTokenURI !== metadata.approvedFetchURI
-    ) {
-      notes.push(
-        `onChainTokenURI !== approvedFetchURI for ${providerId}`,
+    if (metadata.onChainTokenURI !== metadata.approvedFetchURI) {
+      throw new Error(
+        `tokenURI association failure: onChainTokenURI !== approvedFetchURI for ${providerId}`,
       );
     }
   } else {

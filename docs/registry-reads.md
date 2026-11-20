@@ -29,7 +29,7 @@ Exit code is nonzero if **zero** successful live reads. One agent failure does n
 2. Pin one `blockNumber` per chain (`getBlockNumber`), then pass that explicit `blockNumber` to every `readContract`.
 3. Never use silent `latest` while recording a different block in evidence.
 4. Zero-address `getAgentWallet` → `agentWallet: null` with `agentWalletRaw` preserved as the zero address.
-5. Nonexistent tokens → `status: "notFound"`; timeouts → `inconclusive`.
+5. Nonexistent tokens → `status: "notFound"`; timeouts → `inconclusive`; ownerOf ok but missing/reverted `tokenURI`/`getAgentWallet` → `partial` (not metadata-join eligible).
 6. Secrets in errors / URI strings are redacted; tokenURI **content is not fetched**.
 
 ## 4. Live results (2026-11-19)

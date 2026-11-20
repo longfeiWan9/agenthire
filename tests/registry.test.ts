@@ -17,6 +17,7 @@ import {
   classifyRegistryError,
   countSuccessfulLiveReads,
   evidenceToJson,
+  isMetadataJoinEligible,
   isZeroAddress,
   normalizeAgentWallet,
   readAgentIdentities,
@@ -214,6 +215,59 @@ describe("empty URI", () => {
     });
     expect(evidence.status).toBe("success");
     expect(evidence.tokenURI).toBe("");
+    // Empty URI is not eligible for metadata join.
+    expect(isMetadataJoinEligible(evidence)).toBe(false);
+  });
+});
+
+describe("partial identity status", () => {
+  it("marks reverted tokenURI as partial (not full success)", () => {
+    const evidence = buildAgentIdentityEvidence({
+      network: baseMainnetNetwork,
+      agentId: 19_353n,
+      rpcOrigin: "https://mainnet.base.org",
+      observedAt: "2026-11-19T09:00:00.000Z",
+      observations: baseObservations({
+        tokenURI: {
+          ok: false,
+          error: new Error("execution reverted"),
+        },
+      }),
+    });
+    expect(evidence.status).toBe("partial");
+    expect(evidence.owner).toBe(OWNER);
+    expect(evidence.tokenURI).toBeNull();
+    expect(isMetadataJoinEligible(evidence)).toBe(false);
+  });
+
+  it("marks reverted getAgentWallet as partial when tokenURI ok", () => {
+    const evidence = buildAgentIdentityEvidence({
+      network: baseMainnetNetwork,
+      agentId: 19_353n,
+      rpcOrigin: "https://mainnet.base.org",
+      observedAt: "2026-11-19T09:00:00.000Z",
+      observations: baseObservations({
+        getAgentWallet: {
+          ok: false,
+          error: new Error("execution reverted"),
+        },
+      }),
+    });
+    expect(evidence.status).toBe("partial");
+    expect(evidence.fields.tokenURI.ok).toBe(true);
+    expect(isMetadataJoinEligible(evidence)).toBe(false);
+  });
+
+  it("gates metadata join on full success + non-empty tokenURI", () => {
+    const full = buildAgentIdentityEvidence({
+      network: baseMainnetNetwork,
+      agentId: 19_353n,
+      rpcOrigin: "https://mainnet.base.org",
+      observedAt: "2026-11-19T09:00:00.000Z",
+      observations: baseObservations(),
+    });
+    expect(full.status).toBe("success");
+    expect(isMetadataJoinEligible(full)).toBe(true);
   });
 });
 

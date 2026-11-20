@@ -58,8 +58,8 @@ The catalog builder joins **captured** evidence only. `snapshotAsOf` is derived 
 | Item | Value |
 | --- | --- |
 | Node.js (this machine) | `v26.12.1` |
-| pnpm (this machine) | `9.12.2` |
-| `packageManager` field | `pnpm@9.15.9` (**mismatch** with local pnpm; lockfile still honored via frozen install) |
+| pnpm (this machine) | `9.12.2` (host); prefer Corepack → `pnpm@9.15.9` |
+| `packageManager` field | `pnpm@9.15.9` (CI + Corepack pin; frozen lockfile required) |
 | TypeScript | `5.9.3` |
 | viem | `2.58.0` |
 | Vitest | `5.1.0` |
