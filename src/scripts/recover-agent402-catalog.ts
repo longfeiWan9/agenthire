@@ -54,10 +54,17 @@ function parseArgs(argv: readonly string[]): {
       );
       process.exit(0);
     }
-    if (arg === "--force" || arg === "--reset" || arg === "--force-retry") {
+    if (
+      arg === "--force" ||
+      arg === "--reset" ||
+      arg === "--retry" ||
+      arg === "--force-retry" ||
+      arg === "--force-reset"
+    ) {
       throw new Error(
         `Rejected "${arg}": CATALOG-001 has no auto-reset / force-retry. ` +
-          `Remove the attempt marker only via explicit out-of-band human action.`,
+          `Remove the attempt marker only via explicit out-of-band human action ` +
+          `after renewed authorization. Dry-run never consumes the live attempt.`,
       );
     }
     if (arg.startsWith("http://") || arg.startsWith("https://")) {

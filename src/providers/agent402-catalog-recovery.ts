@@ -20,7 +20,6 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
-  renameSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -253,20 +252,42 @@ export function attemptMarkerExists(markerPath: string): boolean {
 }
 
 /**
+ * Exclusive single-use marker creation strategy.
+ *
+ * Uses `flag: "wx"` (O_EXCL) on the **final** marker path so creation fails
+ * atomically if the file already exists. We intentionally do **not** use
+ * write-temp + rename for the marker: on POSIX, `rename(2)` replaces an
+ * existing destination, which would reopen a TOC-TOU race between
+ * exists-check and rename and could overwrite a peer's marker.
+ *
+ * Residual TOC-TOU note: a non-exclusive exists-check before `wx` is only a
+ * fast-path; exclusivity is enforced by `wx`. Human out-of-band marker
+ * removal is still required to authorize any future live attempt — there is
+ * no CLI `--force` / `--reset` / `--retry`.
+ */
+export const CATALOG_001_MARKER_CREATE_STRATEGY =
+  "exclusive-wx-final-path" as const;
+
+export class AttemptMarkerConflictError extends Error {
+  readonly code = "attemptMarkerConflict" as const;
+  constructor(markerPath: string) {
+    super(
+      `CATALOG-001 single-use attempt marker already exists at ${markerPath}. ` +
+        `Re-run is blocked (no auto-reset / force-retry). Crash/timeout after a prior ` +
+        `marker write does not silently re-approve live access.`,
+    );
+    this.name = "AttemptMarkerConflictError";
+  }
+}
+
+/**
  * Write single-use attempt marker BEFORE network I/O.
- * Uses write-temp + rename for crash-safe creation. No overwrite of existing.
+ * Exclusive create (`wx`) on the final path — never overwrites existing.
  */
 export function writeAttemptMarker(input: {
   readonly markerPath: string;
   readonly writtenAt: string;
 }): AttemptMarkerRecord {
-  if (existsSync(input.markerPath)) {
-    throw new Error(
-      `CATALOG-001 single-use attempt marker already exists at ${input.markerPath}. ` +
-        `Re-run is blocked (no auto-reset / force-retry). Crash/timeout after a prior ` +
-        `marker write does not silently re-approve live access.`,
-    );
-  }
   const record: AttemptMarkerRecord = {
     schemaVersion: "1.0",
     requestId: CATALOG_001_REQUEST_ID,
@@ -275,24 +296,24 @@ export function writeAttemptMarker(input: {
     writtenAt: input.writtenAt,
     purpose: "single-use-live-attempt-guard",
     note:
-      "Written before network I/O. Presence blocks any further --approved-live run. " +
-      "No CLI force-reset. Manual marker removal is out of band and not provided.",
+      "Written before network I/O via exclusive wx create. Presence blocks any " +
+      "further --approved-live run. No CLI force-reset. Manual marker removal is " +
+      "out of band and not provided. Human renewed authorization required.",
   };
   mkdirSync(dirname(input.markerPath), { recursive: true });
-  const tmp = `${input.markerPath}.${process.pid}.${Date.now()}.tmp`;
-  writeFileSync(tmp, `${JSON.stringify(record, null, 2)}\n`, { flag: "wx" });
   try {
-    renameSync(tmp, input.markerPath);
+    writeFileSync(
+      input.markerPath,
+      `${JSON.stringify(record, null, 2)}\n`,
+      { flag: "wx" },
+    );
   } catch (error) {
-    try {
-      rmSync(tmp, { force: true });
-    } catch {
-      // ignore cleanup
-    }
-    if (existsSync(input.markerPath)) {
-      throw new Error(
-        `CATALOG-001 single-use attempt marker already exists at ${input.markerPath}. Re-run blocked.`,
-      );
+    const code =
+      error != null && typeof error === "object" && "code" in error
+        ? String((error as { code?: unknown }).code)
+        : "";
+    if (code === "EEXIST" || existsSync(input.markerPath)) {
+      throw new AttemptMarkerConflictError(input.markerPath);
     }
     throw error;
   }
@@ -688,7 +709,29 @@ export async function recoverAgent402Catalog(input: {
         errorClass: "attemptBlocked",
       });
     }
-    writeAttemptMarker({ markerPath, writtenAt: observedAt });
+    try {
+      writeAttemptMarker({ markerPath, writtenAt: observedAt });
+    } catch (error) {
+      if (
+        error instanceof AttemptMarkerConflictError ||
+        (error instanceof Error && /already exists/.test(error.message))
+      ) {
+        return catalogDocument({
+          runMode: "approved-live",
+          status: "attemptBlocked",
+          summary: {
+            ...plannedSummary(observedAt),
+            coverage: "unavailable",
+          },
+          resources: [],
+          documentSummary: null,
+          attemptMarkerPath: markerPathForArtifact,
+          error: `Single-use attempt marker conflict at ${markerPathForArtifact}; live re-run blocked`,
+          errorClass: "attemptBlocked",
+        });
+      }
+      throw error;
+    }
   }
 
   const transport = input.transport ?? secureHttpsExchange;

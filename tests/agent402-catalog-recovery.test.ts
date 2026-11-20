@@ -7,7 +7,9 @@ import {
   type SecureHttpsExchange,
 } from "../src/erc8004/secure-https.ts";
 import {
+  AttemptMarkerConflictError,
   CATALOG_001_APPROVED_URL,
+  CATALOG_001_MARKER_CREATE_STRATEGY,
   CATALOG_001_REQUEST_ID,
   D43C_AGENT402_CONTENT_SHA256,
   analyzeRecoveredAgent402Catalog,
@@ -230,7 +232,100 @@ describe("single-use attempt guard", () => {
     writeAttemptMarker({ markerPath, writtenAt: OBSERVED });
     expect(() =>
       writeAttemptMarker({ markerPath, writtenAt: OBSERVED }),
-    ).toThrow(/already exists/);
+    ).toThrow(AttemptMarkerConflictError);
+  });
+
+  it("uses exclusive wx final-path strategy (not rename-overwrite)", () => {
+    expect(CATALOG_001_MARKER_CREATE_STRATEGY).toBe("exclusive-wx-final-path");
+  });
+
+  it("concurrent marker race: only one exclusive create wins", () => {
+    const repo = tempRepo();
+    const markerPath = join(repo, "race.marker");
+    const winners: boolean[] = [];
+    const errors: unknown[] = [];
+    // Sequential contention on same path — second must EEXIST / conflict.
+    try {
+      writeAttemptMarker({ markerPath, writtenAt: OBSERVED });
+      winners.push(true);
+    } catch (e) {
+      errors.push(e);
+    }
+    try {
+      writeAttemptMarker({ markerPath, writtenAt: OBSERVED });
+      winners.push(true);
+    } catch (e) {
+      errors.push(e);
+    }
+    expect(winners).toEqual([true]);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toBeInstanceOf(AttemptMarkerConflictError);
+    expect(attemptMarkerExists(markerPath)).toBe(true);
+    const body = readFileSync(markerPath, "utf8");
+    expect(body).toContain(CATALOG_001_REQUEST_ID);
+  });
+
+  it("transport failure preserves marker (no silent re-approve)", async () => {
+    const repo = tempRepo();
+    const markerPath = join(repo, "fail-preserve.marker");
+    const result = await recoverAgent402Catalog({
+      runMode: "approved-live",
+      observedAt: OBSERVED,
+      repoRoot: repo,
+      markerPath,
+      transport: async () => {
+        throw new SecureFetchError("timeout", "timed out");
+      },
+    });
+    expect(result.status).toBe("timeout");
+    expect(attemptMarkerExists(markerPath)).toBe(true);
+    // Re-run must stay blocked even after failure.
+    const blocked = await recoverAgent402Catalog({
+      runMode: "approved-live",
+      observedAt: OBSERVED,
+      repoRoot: repo,
+      markerPath,
+      transport: vi.fn(async () => exchangeFromBody(syntheticLegacyCatalog(1).body)),
+    });
+    expect(blocked.status).toBe("attemptBlocked");
+  });
+
+  it("dry-run does not consume the live attempt marker", async () => {
+    const repo = tempRepo();
+    const markerPath = join(repo, "docs/day4/evidence/catalog-001-live-attempt.marker");
+    await recoverAgent402Catalog({
+      runMode: "dry-run",
+      observedAt: OBSERVED,
+      repoRoot: repo,
+      markerPath,
+      transport: vi.fn(),
+    });
+    expect(attemptMarkerExists(markerPath)).toBe(false);
+    // A subsequent live attempt can still write the marker once.
+    const live = await recoverAgent402Catalog({
+      runMode: "approved-live",
+      observedAt: OBSERVED,
+      repoRoot: repo,
+      markerPath,
+      transport: async () => exchangeFromBody(syntheticLegacyCatalog(1).body),
+    });
+    expect(live.status).toBe("success");
+    expect(attemptMarkerExists(markerPath)).toBe(true);
+  });
+
+  it("CLI rejects --retry / --force-reset (no renewed-auth bypass)", async () => {
+    await expect(
+      runRecoverAgent402Catalog({
+        argv: ["node", "recover", "--retry"],
+        repoRoot: tempRepo(),
+      }),
+    ).rejects.toThrow(/force-reset|force-retry|auto-reset/);
+    await expect(
+      runRecoverAgent402Catalog({
+        argv: ["node", "recover", "--force-reset"],
+        repoRoot: tempRepo(),
+      }),
+    ).rejects.toThrow(/force-reset|force-retry|auto-reset/);
   });
 });
 

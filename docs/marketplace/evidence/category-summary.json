@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "1.0",
+  "mode": "READ_ONLY / NO_SIGNING / NO_PAYMENT / STRICTLY_OFFLINE",
+  "kind": "marketplaceCategorySummary",
+  "snapshotAsOf": "2026-11-20T09:05:44.412Z",
+  "categories": [
+    {
+      "categoryId": "research-intelligence",
+      "name": "Research & Intelligence",
+      "capabilityCount": 59,
+      "agentProfileCount": 4,
+      "skillCount": 16,
+      "resourceCount": 29,
+      "erc8004ServiceCount": 14,
+      "plannedCount": 0
+    },
+    {
+      "categoryId": "data-analytics",
+      "name": "Data & Analytics",
+      "capabilityCount": 64,
+      "agentProfileCount": 3,
+      "skillCount": 26,
+      "resourceCount": 37,
+      "erc8004ServiceCount": 0,
+      "plannedCount": 1
+    },
+    {
+      "categoryId": "content-documents",
+      "name": "Content & Documents",
+      "capabilityCount": 41,
+      "agentProfileCount": 2,
+      "skillCount": 2,
+      "resourceCount": 39,
+      "erc8004ServiceCount": 0,
+      "plannedCount": 0
+    },
+    {
+      "categoryId": "developer-tools",
+      "name": "Developer Tools",
+      "capabilityCount": 74,
+      "agentProfileCount": 3,
+      "skillCount": 4,
+      "resourceCount": 60,
+      "erc8004ServiceCount": 10,
+      "plannedCount": 0
+    },
+    {
+      "categoryId": "other",
+      "name": "Other",
+      "capabilityCount": 477,
+      "agentProfileCount": 3,
+      "skillCount": 4,
+      "resourceCount": 464,
+      "erc8004ServiceCount": 9,
+      "plannedCount": 0
+    }
+  ],
+  "uncategorizedPolicy": "fallback-to-other",
+  "multiCategoryAllowed": true
+}

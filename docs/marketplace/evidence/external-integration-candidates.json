@@ -1,0 +1,118 @@
+{
+  "schemaVersion": "1.0",
+  "mode": "READ_ONLY / NO_SIGNING / NO_PAYMENT / STRICTLY_OFFLINE",
+  "kind": "externalIntegrationCandidates",
+  "snapshotAsOf": "2026-11-20T09:05:44.412Z",
+  "maxCandidates": 5,
+  "candidateCount": 5,
+  "approvedForNetworkExecutionTrue": 0,
+  "candidates": [
+    {
+      "candidateId": "extint-001:cap:1e34c6a2a00f",
+      "capabilityId": "cap:1e34c6a2a00f",
+      "providerKey": "skill-provider:QuantJourney",
+      "displayName": "Security Screen",
+      "categories": [
+        "data-analytics"
+      ],
+      "rationale": "readOnlyLikely(+40), nonDestructive(+15), noCredentialHint(+15), clear(+20), skillWithDescription(+18), curatedCategory(+5)",
+      "priority": "high",
+      "score": 113,
+      "readOnlyLikely": true,
+      "destructiveRisk": false,
+      "credentialRisk": false,
+      "ambiguous": false,
+      "approvedForNetworkExecution": false,
+      "paymentCompatible": false,
+      "sourceKind": "agent-card-skill"
+    },
+    {
+      "candidateId": "extint-002:cap:3098a49338c7",
+      "capabilityId": "cap:3098a49338c7",
+      "providerKey": "skill-provider:Agent402",
+      "displayName": "Find a tool for a task",
+      "categories": [
+        "data-analytics",
+        "developer-tools"
+      ],
+      "rationale": "readOnlyLikely(+40), nonDestructive(+15), noCredentialHint(+15), clear(+20), skillWithDescription(+18), curatedCategory(+5)",
+      "priority": "high",
+      "score": 113,
+      "readOnlyLikely": true,
+      "destructiveRisk": false,
+      "credentialRisk": false,
+      "ambiguous": false,
+      "approvedForNetworkExecution": false,
+      "paymentCompatible": false,
+      "sourceKind": "agent-card-skill"
+    },
+    {
+      "candidateId": "extint-003:cap:3a015aec3dc0",
+      "capabilityId": "cap:3a015aec3dc0",
+      "providerKey": "skill-provider:QuantJourney",
+      "displayName": "SEC Company Facts Compact",
+      "categories": [
+        "research-intelligence",
+        "data-analytics"
+      ],
+      "rationale": "readOnlyLikely(+40), nonDestructive(+15), noCredentialHint(+15), clear(+20), skillWithDescription(+18), curatedCategory(+5)",
+      "priority": "high",
+      "score": 113,
+      "readOnlyLikely": true,
+      "destructiveRisk": false,
+      "credentialRisk": false,
+      "ambiguous": false,
+      "approvedForNetworkExecution": false,
+      "paymentCompatible": false,
+      "sourceKind": "agent-card-skill"
+    },
+    {
+      "candidateId": "extint-004:cap:160074e18690",
+      "capabilityId": "cap:160074e18690",
+      "providerKey": "skill-provider:QuantJourney",
+      "displayName": "SEC Insider Filing Activity",
+      "categories": [
+        "research-intelligence",
+        "content-documents"
+      ],
+      "rationale": "nonDestructive(+15), noCredentialHint(+15), clear(+20), skillWithDescription(+18), curatedCategory(+5)",
+      "priority": "medium",
+      "score": 73,
+      "readOnlyLikely": false,
+      "destructiveRisk": false,
+      "credentialRisk": false,
+      "ambiguous": false,
+      "approvedForNetworkExecution": false,
+      "paymentCompatible": false,
+      "sourceKind": "agent-card-skill"
+    },
+    {
+      "candidateId": "extint-005:cap:4da2cf413278",
+      "capabilityId": "cap:4da2cf413278",
+      "providerKey": "skill-provider:QuantJourney",
+      "displayName": "SEC Filing Delta",
+      "categories": [
+        "research-intelligence"
+      ],
+      "rationale": "readOnlyLikely(+40), nonDestructive(+15), noCredentialHint(+15), clear(+20), skillWithDescription(+18), curatedCategory(+5)",
+      "priority": "high",
+      "score": 113,
+      "readOnlyLikely": true,
+      "destructiveRisk": false,
+      "credentialRisk": false,
+      "ambiguous": false,
+      "approvedForNetworkExecution": false,
+      "paymentCompatible": false,
+      "sourceKind": "agent-card-skill"
+    }
+  ],
+  "emptyCategoriesAllowed": true,
+  "notes": [
+    "Integration readiness ≠ search ranking.",
+    "All candidates approvedForNetworkExecution: false — no live follow-up authorized.",
+    "paymentCompatible remains false; Sepolia x402 discoverable ≠ payable.",
+    "Prefer clear narrow read-only; destructive/credentialed/ambiguous excluded.",
+    "Empty shortlist is valid when no safe candidates exist.",
+    "Assessment spans all curated categories, not wallet-summary-only."
+  ]
+}
