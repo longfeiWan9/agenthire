@@ -19,7 +19,8 @@
     "build:catalog": "tsx src/scripts/build-catalog.ts",
     "plan:inspections": "tsx src/scripts/plan-inspections.ts",
     "plan:service-inspections": "tsx src/scripts/plan-service-inspections.ts",
-    "inspect:discovery": "tsx src/scripts/inspect-discovery.ts"
+    "inspect:discovery": "tsx src/scripts/inspect-discovery.ts",
+    "inspect:x402-discovery": "tsx src/scripts/inspect-x402-discovery.ts"
   },
   "dependencies": {
     "viem": "2.58.0"
