@@ -222,10 +222,17 @@ function looksLikeLegacyResourceList(value: Record<string, unknown>): boolean {
 /**
  * Recognize and summarize a 2xx JSON body from `/.well-known/x402`.
  * Does not fetch advertised resources. Does not invent PAYMENT-REQUIRED fields.
+ *
+ * `resourceSampleLimit`:
+ * - omit / default → D4.3c sample cap (`X402_ADVERTISED_RESOURCE_SAMPLE_LIMIT`)
+ * - `"all"` → retain every advertised resource claim (D4.4b full catalog recovery)
  */
 export function parseX402DiscoveryDocumentBytes(
   body: Buffer,
-  options?: { readonly manifestUrl?: string },
+  options?: {
+    readonly manifestUrl?: string;
+    readonly resourceSampleLimit?: number | "all";
+  },
 ): X402DocumentParseResult {
   if (!body || body.length === 0) {
     return { ok: false, reason: "emptyBody", message: "Empty response body" };
@@ -292,6 +299,11 @@ export function parseX402DiscoveryDocumentBytes(
       }
     }
 
+    const sampleLimit =
+      options?.resourceSampleLimit === "all"
+        ? Number.POSITIVE_INFINITY
+        : (options?.resourceSampleLimit ?? X402_ADVERTISED_RESOURCE_SAMPLE_LIMIT);
+    const retained = advertisedResources.slice(0, sampleLimit);
     return {
       ok: true,
       summary: {
@@ -302,13 +314,10 @@ export function parseX402DiscoveryDocumentBytes(
         name: null,
         description: typeof json.error === "string" ? json.error : null,
         rawTopLevelKeys,
-        advertisedResources: advertisedResources.slice(
-          0,
-          X402_ADVERTISED_RESOURCE_SAMPLE_LIMIT,
-        ),
+        advertisedResources: retained,
         advertisedResourceCount: advertisedResources.length,
         advertisedResourcesTruncated:
-          advertisedResources.length > X402_ADVERTISED_RESOURCE_SAMPLE_LIMIT,
+          advertisedResources.length > retained.length,
         facilitatorBaseUrl: null,
         facilitatorEndpointPaths: [],
         facilitatorNetworks: [],
@@ -337,12 +346,13 @@ export function parseX402DiscoveryDocumentBytes(
     const allResources = resourcesRaw.map((r) =>
       summarizeResourceEntry(r, manifestHost),
     );
+    const sampleLimit =
+      options?.resourceSampleLimit === "all"
+        ? Number.POSITIVE_INFINITY
+        : (options?.resourceSampleLimit ?? X402_ADVERTISED_RESOURCE_SAMPLE_LIMIT);
+    const advertisedResources = allResources.slice(0, sampleLimit);
     const advertisedResourcesTruncated =
-      allResources.length > X402_ADVERTISED_RESOURCE_SAMPLE_LIMIT;
-    const advertisedResources = allResources.slice(
-      0,
-      X402_ADVERTISED_RESOURCE_SAMPLE_LIMIT,
-    );
+      allResources.length > advertisedResources.length;
 
     let facilitatorBaseUrl: string | null = null;
     let facilitatorEndpointPaths: string[] = [];
@@ -399,8 +409,10 @@ export function parseX402DiscoveryDocumentBytes(
           "Discovery manifest claims only — advertised resources/facilitator endpoints were NOT fetched; " +
           `does not establish ${MVP_TASK_ID} or Sepolia payment compatibility` +
           (advertisedResourcesTruncated
-            ? `; resource sample truncated to ${X402_ADVERTISED_RESOURCE_SAMPLE_LIMIT} of ${allResources.length}`
-            : ""),
+            ? `; resource sample truncated to ${advertisedResources.length} of ${allResources.length}`
+            : options?.resourceSampleLimit === "all"
+              ? `; full resource list retained (${allResources.length})`
+              : ""),
       },
       bodyChallengeParse: null,
       bodyPolicy: null,

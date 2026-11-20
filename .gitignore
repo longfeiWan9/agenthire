@@ -10,6 +10,9 @@ node_modules/
 dist/
 coverage/
 
+# D4.4b temporary raw catalog body (hashed then deleted; never commit)
+.tmp/
+
 # OS / editor
 .DS_Store
 Thumbs.db

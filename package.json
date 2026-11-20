@@ -21,7 +21,9 @@
     "plan:service-inspections": "tsx src/scripts/plan-service-inspections.ts",
     "inspect:discovery": "tsx src/scripts/inspect-discovery.ts",
     "inspect:x402-discovery": "tsx src/scripts/inspect-x402-discovery.ts",
-    "analyze:resources": "tsx src/scripts/analyze-resources.ts"
+    "analyze:resources": "tsx src/scripts/analyze-resources.ts",
+    "recover:agent402-catalog": "tsx src/scripts/recover-agent402-catalog.ts",
+    "analyze:agent402-catalog": "tsx src/scripts/analyze-agent402-catalog.ts"
   },
   "dependencies": {
     "viem": "2.58.0"

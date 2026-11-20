@@ -1,0 +1,88 @@
+{
+  "schemaVersion": "1.0",
+  "mode": "READ_ONLY / NO_SIGNING / NO_PAYMENT / STRICTLY_OFFLINE",
+  "kind": "resourceInspectionShortlist",
+  "analysisVersion": "1.0",
+  "mvpTaskId": "wallet-activity-summary@1.0",
+  "coverage": "complete",
+  "candidateCount": 3,
+  "maxCandidates": 3,
+  "approvedForNetworkExecutionTrue": 0,
+  "candidates": [
+    {
+      "resourceId": "CATALOG-001:284:METHOD_UNSPECIFIED:https://agent402.tools/api/evm-rpc",
+      "provider": "Agent402",
+      "sourceDiscoveryId": "CATALOG-001",
+      "sanitizedUrl": "https://agent402.tools/api/evm-rpc",
+      "method": null,
+      "categories": [
+        "blockchainData"
+      ],
+      "taskRelevance": "potentiallyRelated",
+      "priority": "medium",
+      "score": 48,
+      "rationale": "potentiallyRelated(+25), blockchainData(+18), urlOk(+10), methodUnspecified(-5)",
+      "adapterNeeds": null,
+      "paymentAssessment": "insufficientInformation",
+      "approvedForNetworkExecution": false,
+      "b4Upgrades": {
+        "endpointReachable": false,
+        "challengeVerified": false,
+        "paymentCompatible": false,
+        "paidVerified": false
+      }
+    },
+    {
+      "resourceId": "CATALOG-001:416:METHOD_UNSPECIFIED:https://agent402.tools/api/onchain-sql",
+      "provider": "Agent402",
+      "sourceDiscoveryId": "CATALOG-001",
+      "sanitizedUrl": "https://agent402.tools/api/onchain-sql",
+      "method": null,
+      "categories": [
+        "blockchainData"
+      ],
+      "taskRelevance": "potentiallyRelated",
+      "priority": "medium",
+      "score": 48,
+      "rationale": "potentiallyRelated(+25), blockchainData(+18), urlOk(+10), methodUnspecified(-5)",
+      "adapterNeeds": null,
+      "paymentAssessment": "insufficientInformation",
+      "approvedForNetworkExecution": false,
+      "b4Upgrades": {
+        "endpointReachable": false,
+        "challengeVerified": false,
+        "paymentCompatible": false,
+        "paidVerified": false
+      }
+    },
+    {
+      "resourceId": "CATALOG-001:417:METHOD_UNSPECIFIED:https://agent402.tools/api/onchain-sql-schema",
+      "provider": "Agent402",
+      "sourceDiscoveryId": "CATALOG-001",
+      "sanitizedUrl": "https://agent402.tools/api/onchain-sql-schema",
+      "method": null,
+      "categories": [
+        "blockchainData"
+      ],
+      "taskRelevance": "potentiallyRelated",
+      "priority": "medium",
+      "score": 48,
+      "rationale": "potentiallyRelated(+25), blockchainData(+18), urlOk(+10), methodUnspecified(-5)",
+      "adapterNeeds": null,
+      "paymentAssessment": "insufficientInformation",
+      "approvedForNetworkExecution": false,
+      "b4Upgrades": {
+        "endpointReachable": false,
+        "challengeVerified": false,
+        "paymentCompatible": false,
+        "paidVerified": false
+      }
+    }
+  ],
+  "notes": [
+    "All candidates have approvedForNetworkExecution: false",
+    "Empty shortlist is valid when recoverable evidence is insufficient",
+    "Prefer wallet/tx/blockchain-data over discovery URLs when scoring",
+    "No network execution authorized by this document"
+  ]
+}
