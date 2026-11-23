@@ -82,6 +82,17 @@ export type SecureHttpsDeps = {
   readonly accept?: string;
   /** Override User-Agent string. */
   readonly userAgent?: string;
+  /**
+   * Streaming body-size abort limit in bytes.
+   * Defaults to SECURE_FETCH_MAX_BYTES (256 KiB).
+   * Callers with raised authorization (e.g. D5.5 OpenAPI 1 MiB) pass an explicit cap.
+   */
+  readonly maxBytes?: number;
+  /**
+   * Per-request timeout in milliseconds.
+   * Defaults to SECURE_FETCH_TIMEOUT_MS (10s).
+   */
+  readonly timeoutMs?: number;
 };
 
 /**
@@ -448,6 +459,18 @@ export async function secureHttpsExchange(
     deps.accept ?? "application/json, text/plain;q=0.9, */*;q=0.1";
   const userAgent =
     deps.userAgent ?? "AgentHire-registration-metadata/0.1 (READ_ONLY)";
+  const maxBytes =
+    typeof deps.maxBytes === "number" &&
+    Number.isFinite(deps.maxBytes) &&
+    deps.maxBytes > 0
+      ? Math.floor(deps.maxBytes)
+      : SECURE_FETCH_MAX_BYTES;
+  const timeoutMs =
+    typeof deps.timeoutMs === "number" &&
+    Number.isFinite(deps.timeoutMs) &&
+    deps.timeoutMs > 0
+      ? Math.floor(deps.timeoutMs)
+      : SECURE_FETCH_TIMEOUT_MS;
 
   let addresses: readonly ResolvedAddress[];
   try {
@@ -460,6 +483,7 @@ export async function secureHttpsExchange(
   // Dial the validated IP directly. TLS SNI + Host header keep the logical
   // hostname for certificate verification — this is connection-time pinning,
   // not a post-connect DNS re-check on a naive global fetch.
+  // Dialing the pinned IP also bypasses HTTP(S)_PROXY / ALL_PROXY env agents.
   const hostHeader = url.port ? `${url.hostname}:${url.port}` : url.hostname;
 
   return new Promise<SecureHttpsExchange>((resolve, reject) => {
@@ -480,7 +504,9 @@ export async function secureHttpsExchange(
         method: "GET",
         family: pinned.family,
         rejectUnauthorized: true,
-        timeout: SECURE_FETCH_TIMEOUT_MS,
+        timeout: timeoutMs,
+        // Explicitly omit agent so env HTTP(S)_PROXY is never consulted.
+        agent: false,
         headers: {
           Host: hostHeader,
           Accept: accept,
@@ -508,7 +534,26 @@ export async function secureHttpsExchange(
           return;
         }
 
-        void readBodyWithLimit(res, SECURE_FETCH_MAX_BYTES)
+        // Fail closed on declared Content-Length over the authorized cap.
+        const contentLengthRaw = res.headers["content-length"];
+        const contentLength =
+          typeof contentLengthRaw === "string"
+            ? Number(contentLengthRaw)
+            : Array.isArray(contentLengthRaw)
+              ? Number(contentLengthRaw[0])
+              : Number.NaN;
+        if (Number.isFinite(contentLength) && contentLength > maxBytes) {
+          res.resume();
+          finish(
+            new SecureFetchError(
+              "oversized",
+              `Content-Length ${contentLength} exceeds ${maxBytes} byte limit`,
+            ),
+          );
+          return;
+        }
+
+        void readBodyWithLimit(res, maxBytes)
           .then((body) => {
             if (settled) return;
             const sha256 = createHash("sha256").update(body).digest("hex");
@@ -531,9 +576,9 @@ export async function secureHttpsExchange(
       },
     );
 
-    req.setTimeout(SECURE_FETCH_TIMEOUT_MS, () => {
+    req.setTimeout(timeoutMs, () => {
       req.destroy(
-        new SecureFetchError("timeout", `Request timed out after ${SECURE_FETCH_TIMEOUT_MS}ms`, {
+        new SecureFetchError("timeout", `Request timed out after ${timeoutMs}ms`, {
           retryable: true,
         }),
       );

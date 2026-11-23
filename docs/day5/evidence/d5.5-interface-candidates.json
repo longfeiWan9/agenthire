@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "1.0",
+  "mode": "READ_ONLY / NO_SIGNING / NO_PAYMENT / ONE_APPROVED_OPENAPI_GET_ONLY",
+  "kind": "d55InterfaceCandidates",
+  "requestId": "OPENAPI-001",
+  "observedAt": "2026-11-23T08:23:15.462Z",
+  "sourceUrl": "https://agent402.tools/openapi.json",
+  "inventory": null,
+  "l1Candidates": [],
+  "l1Count": 0,
+  "maxL1Candidates": 5,
+  "quantjourneyIdentityLadder": "L0",
+  "rankedForDecision": [],
+  "decision": {
+    "outcome": "C_no_l1_null_selection",
+    "selectedCapabilityId": null,
+    "selectedOperationKey": null,
+    "rationale": "No independently operated external capability reaches L1 (exact method + invocation route + schemas) from local evidence. QuantJourney SEC Identity remains L0. Honest null selection."
+  },
+  "notes": [
+    "OpenAPI \u2260 L2/L3/L4 \u2014 documentation alone never upgrades reachability/execution/payment.",
+    "No service execution, signing, or payment performed.",
+    "QuantJourney SEC Identity remains L0 unless separate OpenAPI evidence exists (none fetched).",
+    "D4.4b catalog marker was not reused."
+  ]
+}
