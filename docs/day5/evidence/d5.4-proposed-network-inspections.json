@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "1.0",
+  "mode": "STRICTLY_OFFLINE / READ_ONLY_EXTERNAL_EVIDENCE / NO_SIGNING / NO_PAYMENT",
+  "kind": "d54ProposedNetworkInspections",
+  "snapshotAsOf": "1970-01-01T00:00:00.000Z",
+  "maxProposals": 2,
+  "proposalCount": 1,
+  "fetchPerformed": false,
+  "approvedForNetworkExecution": false,
+  "reusedD44bCatalog001Marker": false,
+  "proposals": [
+    {
+      "proposalId": "D54-PNI-001",
+      "purpose": "interface-document-retrieval",
+      "provider": "Agent402",
+      "exactUrl": "https://agent402.tools/openapi.json",
+      "method": "GET",
+      "headers": {
+        "Accept": "application/json"
+      },
+      "bodyTemplate": null,
+      "evidenceBackedExactUrl": true,
+      "localEvidenceRefs": [
+        "docs/day4/evidence/discovery-inspection.json#DISC-002",
+        "docs/day4/evidence/discovery-inspection.json#DISC-003",
+        "docs/day4/evidence/proposed-service-inspections.json#PSI-003",
+        "docs/marketplace/evidence/capability-catalog.json"
+      ],
+      "priorAttempt": {
+        "evidenceId": "DISC-003",
+        "status": "oversized",
+        "sizeCapBytes": 262144,
+        "note": "Prior GET aborted at 256 KiB — no path inventory retained. Future fetch needs separate size-cap authorization for this exact URL only."
+      },
+      "expectedUnsignedBehavior": "Unsigned discovery GET of OpenAPI document. Do not execute discovered operations. Do not follow $ref. Treat body as untrusted.",
+      "outstandingSafetyQuestions": [
+        "Requires explicit size-limit raise authorization (not granted in D5.4)",
+        "OpenAPI $ref must not be followed",
+        "Discovered operations remain unapproved",
+        "Must not reuse CATALOG-001 / D4.4b one-time approval marker"
+      ],
+      "approvedForNetworkExecution": false,
+      "worth": "Only source-declared OpenAPI document URL that could supply method+schema for Agent402 routes; QuantJourney still lacks any source-declared OpenAPI URL.",
+      "sideEffectRisk": "Bandwidth/DoS if size cap raised carelessly; keep streaming abort; no retries",
+      "remainingAuthorization": "Human must approve this exact URL/method and a raised size cap; D5.4 does not authorize fetch."
+    }
+  ],
+  "omittedBecauseNoExactUrl": [
+    {
+      "target": "QuantJourney OpenAPI / qj-sec-company-identity query route",
+      "reason": "DISC-004 documentSummary.url is null; card mentions OpenAPI generically without declaring an exact URL. Inventing agents.quantjourney.cloud/openapi.json is forbidden."
+    }
+  ],
+  "notes": [
+    "proposalCount=1 (≤2). Second slot unused — no additional exact interface-document URL improves QuantJourney L0 gap without invention.",
+    "All approvedForNetworkExecution flags false.",
+    "Zero network fetch in D5.4.",
+    "Do not reuse D4.4b catalog-001-live-attempt.marker."
+  ]
+}
