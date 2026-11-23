@@ -57,11 +57,28 @@ pnpm typecheck       # tsc --noEmit
 pnpm test            # vitest run (offline)
 pnpm test:watch      # vitest
 pnpm dev             # hello smoke (READ_ONLY / NO_SIGNING)
+pnpm dev:ui          # Next.js marketplace UI (local-only; STRICTLY_OFFLINE)
+pnpm build           # next build
+pnpm start           # next start
 pnpm check:rpc       # live Base RPC connectivity (optional refresh)
 pnpm read:agents     # live registry identity snapshots (optional refresh)
 pnpm read:metadata   # live allowlisted registration fetches (optional refresh)
 pnpm build:catalog   # offline; deterministic catalog + verification from evidence
+pnpm demo:hirejob:offline       # D5.2 offline HireJob fixtures
+pnpm demo:hirejob:quote:offline # D5.3 quote + approval scenarios
 ```
+
+## Offline marketplace UI (D5.6)
+
+Local Next.js App Router explorer over committed marketplace evidence (690 capabilities). No provider network, signing, or payment. SEC Company Identity (`cap:79da211975c2`) offers an offline hire demo only.
+
+```bash
+pnpm dev:ui
+# http://127.0.0.1:3000 — Discover → detail → Try offline demo
+```
+
+Docs: [`docs/day5/d5.6-marketplace-ui.md`](docs/day5/d5.6-marketplace-ui.md), [`docs/day5/d5.6-demo-runbook.md`](docs/day5/d5.6-demo-runbook.md).
+
 
 Offline gate (also run in CI):
 

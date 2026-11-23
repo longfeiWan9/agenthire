@@ -9,6 +9,10 @@ node_modules/
 # Build / coverage
 dist/
 coverage/
+.next/
+out/
+tsconfig.tsbuildinfo
+*.tsbuildinfo
 
 # D4.4b temporary raw catalog body (hashed then deleted; never commit)
 .tmp/
