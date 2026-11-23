@@ -24,7 +24,8 @@
     "analyze:resources": "tsx src/scripts/analyze-resources.ts",
     "recover:agent402-catalog": "tsx src/scripts/recover-agent402-catalog.ts",
     "analyze:agent402-catalog": "tsx src/scripts/analyze-agent402-catalog.ts",
-    "build:marketplace": "tsx src/scripts/build-marketplace-catalog.ts"
+    "build:marketplace": "tsx src/scripts/build-marketplace-catalog.ts",
+    "demo:hirejob:offline": "tsx src/scripts/demo-hirejob-offline.ts"
   },
   "dependencies": {
     "viem": "2.58.0"
