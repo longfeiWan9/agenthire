@@ -46,7 +46,9 @@ export default async function CategoryDetailPage({
         </span>
       </div>
       {paged.pageHits.length === 0 ? (
-        <div className="empty">No capabilities in this category.</div>
+        <div className="empty" role="status">
+          No capabilities in this category.
+        </div>
       ) : (
         <div className="card-list">
           {paged.pageHits.map((hit) => (

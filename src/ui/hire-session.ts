@@ -65,6 +65,8 @@ export type HireSessionSnapshot = {
     readonly notes: readonly string[];
   } | null;
   readonly banner: string | null;
+  /** Latest user-visible action outcome (not buried in collapsed notes). */
+  readonly actionFeedback: string | null;
   readonly notes: readonly string[];
 };
 
@@ -88,6 +90,7 @@ function emptySnapshot(capabilityId: string): HireSessionSnapshot {
     session: null,
     fixtureResult: null,
     banner: null,
+    actionFeedback: null,
     notes: supported
       ? [
           "Offline fixture mode only",
@@ -135,10 +138,12 @@ export function configureHireInput(
 
   const validated = validateSecCompanyIdentityInput(raw);
   if (!validated.ok) {
+    const msg = `${validated.code}: ${validated.message}`;
     return save({
       ...emptySnapshot(capabilityId),
       input: null,
-      validationError: `${validated.code}: ${validated.message}`,
+      validationError: msg,
+      actionFeedback: msg,
       notes: [...base.notes, "input validation failed locally"],
     });
   }
@@ -147,6 +152,7 @@ export function configureHireInput(
     ...emptySnapshot(capabilityId),
     input: validated.value,
     validationError: null,
+    actionFeedback: `Input accepted (${kind}) — Create HireJob enabled`,
     notes: [...base.notes, `configured kind=${kind}`],
   });
 }
@@ -212,6 +218,8 @@ export function createValidatedHireJob(
     job,
     liveQuote,
     validationError: null,
+    actionFeedback:
+      "HireJob created — live quote unavailable; simulation only",
     notes: [
       ...base.notes,
       `hireJobId=${job.hireJobId}`,
@@ -284,6 +292,8 @@ export function revealSyntheticQuote(
     syntheticQuoteRevealed: true,
     binding,
     session,
+    actionFeedback:
+      "SYNTHETIC quote revealed — not a live provider quote; paymentReady=false",
     notes: [
       ...base.notes,
       "SYNTHETIC quote revealed — not a live provider quote",
@@ -310,12 +320,15 @@ export function simulateApproveHire(
     return save({
       ...base,
       session: result.session,
+      actionFeedback: `Simulation approve failed: ${result.code}`,
       notes: [...base.notes, `approve failed: ${result.code}`],
     });
   }
   return save({
     ...base,
     session: result.session,
+    actionFeedback:
+      "Simulation approved — executionAuthorization=false; paymentExecutionAuthorization=false",
     notes: [
       ...base.notes,
       `approval.state=${result.session.state}`,
@@ -339,12 +352,14 @@ export function simulateRejectHire(
     return save({
       ...base,
       session: result.session,
+      actionFeedback: `Simulation reject failed: ${result.code}`,
       notes: [...base.notes, `reject failed: ${result.code}`],
     });
   }
   return save({
     ...base,
     session: result.session,
+    actionFeedback: `Simulation rejected — state=${result.session.state}`,
     notes: [...base.notes, `approval.state=${result.session.state}`],
   });
 }
@@ -364,9 +379,13 @@ export function attemptModifiedBindingApprove(
     nowIso: FIXED_AT,
     simulationOnly: true,
   });
+  const feedback = result.ok
+    ? "modified-binding approve ok=true (unexpected)"
+    : `modified-binding approve ok=false; code=${result.code}`;
   return save({
     ...base,
     session: result.ok ? result.session : result.session,
+    actionFeedback: feedback,
     notes: [
       ...base.notes,
       `modified-binding approve ok=${result.ok}`,
@@ -388,12 +407,14 @@ export function revokeHireApproval(
     return save({
       ...base,
       session: result.session,
+      actionFeedback: `Revoke failed: ${result.code}`,
       notes: [...base.notes, `revoke failed: ${result.code}`],
     });
   }
   return save({
     ...base,
     session: result.session,
+    actionFeedback: `Approval revoked — state=${result.session.state}`,
     notes: [...base.notes, `approval.state=${result.session.state}`],
   });
 }
@@ -416,6 +437,7 @@ export function runNamedOfflineFixture(
       notes: run.notes,
     },
     banner: SIMULATION_RESULT_BANNER,
+    actionFeedback: `Fixture ${kind} finished — providerExecutionVerified=false`,
     notes: [
       ...base.notes,
       SIMULATION_RESULT_BANNER,

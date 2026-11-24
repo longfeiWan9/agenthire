@@ -18,9 +18,9 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <SiteHeader />
-        <main>{children}</main>
+        <main id="main-content">{children}</main>
         <footer className="site-footer">
-          AgentHire D5.6 · STRICTLY_OFFLINE · local catalog evidence only · not
+          AgentHire D6.1 · STRICTLY_OFFLINE · local catalog evidence only · not
           690 verified agents · not ready to hire
         </footer>
       </body>
