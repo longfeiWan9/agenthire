@@ -28,6 +28,7 @@
     "recover:agent402-catalog": "tsx src/scripts/recover-agent402-catalog.ts",
     "analyze:agent402-catalog": "tsx src/scripts/analyze-agent402-catalog.ts",
     "inspect:agent402-openapi": "tsx src/scripts/inspect-agent402-openapi.ts",
+    "observe:agent402-jsonvalidate": "tsx src/scripts/observe-agent402-jsonvalidate.ts",
     "build:marketplace": "tsx src/scripts/build-marketplace-catalog.ts",
     "demo:hirejob:offline": "tsx src/scripts/demo-hirejob-offline.ts",
     "demo:hirejob:quote:offline": "tsx src/scripts/demo-hirejob-quote-offline.ts"

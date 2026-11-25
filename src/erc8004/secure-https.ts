@@ -74,6 +74,8 @@ export type DnsLookupFn = (hostname: string) => Promise<readonly ResolvedAddress
 
 export type HttpsRequestFn = typeof https.request;
 
+export type SecureHttpsMethod = "GET" | "POST" | "HEAD";
+
 export type SecureHttpsDeps = {
   readonly lookup?: DnsLookupFn;
   readonly request?: HttpsRequestFn;
@@ -93,6 +95,15 @@ export type SecureHttpsDeps = {
    * Defaults to SECURE_FETCH_TIMEOUT_MS (10s).
    */
   readonly timeoutMs?: number;
+  /**
+   * HTTP method. Defaults to GET. POST requires an explicit body; never adds
+   * Cookie / Authorization / payment / PoW headers.
+   */
+  readonly method?: SecureHttpsMethod;
+  /** Request body for POST (Buffer or UTF-8 string). Ignored for GET/HEAD. */
+  readonly body?: Buffer | string;
+  /** Content-Type for the request body (default application/json for POST). */
+  readonly contentType?: string;
 };
 
 /**
@@ -442,7 +453,8 @@ function headerContentType(
 }
 
 /**
- * Perform one HTTPS GET with DNS validation + connection-time IP pinning.
+ * Perform one HTTPS exchange with DNS validation + connection-time IP pinning.
+ * Defaults to GET. Optional POST/HEAD via deps.method (+ deps.body for POST).
  * Returns the response body for any non-redirect status (including 4xx/5xx).
  * Does not follow redirects. Does not send cookies or credentials. No retries.
  */
@@ -472,6 +484,36 @@ export async function secureHttpsExchange(
       ? Math.floor(deps.timeoutMs)
       : SECURE_FETCH_TIMEOUT_MS;
 
+  const method: SecureHttpsMethod = deps.method ?? "GET";
+  if (method !== "GET" && method !== "POST" && method !== "HEAD") {
+    throw new SecureFetchError(
+      "invalidUrl",
+      `Unsupported HTTPS method: ${String(method)}`,
+    );
+  }
+
+  let requestBody: Buffer | null = null;
+  if (method === "POST") {
+    if (deps.body === undefined || deps.body === null) {
+      throw new SecureFetchError(
+        "invalidUrl",
+        "POST requires an explicit request body",
+      );
+    }
+    requestBody =
+      typeof deps.body === "string" ? Buffer.from(deps.body, "utf8") : deps.body;
+  } else if (deps.body !== undefined && deps.body !== null) {
+    throw new SecureFetchError(
+      "invalidUrl",
+      `${method} must not carry a request body`,
+    );
+  }
+
+  const requestContentType =
+    method === "POST"
+      ? (deps.contentType ?? "application/json")
+      : deps.contentType;
+
   let addresses: readonly ResolvedAddress[];
   try {
     addresses = await lookup(url.hostname);
@@ -485,6 +527,18 @@ export async function secureHttpsExchange(
   // not a post-connect DNS re-check on a naive global fetch.
   // Dialing the pinned IP also bypasses HTTP(S)_PROXY / ALL_PROXY env agents.
   const hostHeader = url.port ? `${url.hostname}:${url.port}` : url.hostname;
+
+  const headers: Record<string, string | number> = {
+    Host: hostHeader,
+    Accept: accept,
+    "User-Agent": userAgent,
+    Connection: "close",
+    // Explicitly omit Cookie / Authorization / payment / PoW headers.
+  };
+  if (requestBody) {
+    headers["Content-Type"] = requestContentType ?? "application/json";
+    headers["Content-Length"] = requestBody.byteLength;
+  }
 
   return new Promise<SecureHttpsExchange>((resolve, reject) => {
     let settled = false;
@@ -501,19 +555,13 @@ export async function secureHttpsExchange(
         servername: url.hostname,
         port: url.port ? Number(url.port) : 443,
         path: `${url.pathname}${url.search}`,
-        method: "GET",
+        method,
         family: pinned.family,
         rejectUnauthorized: true,
         timeout: timeoutMs,
         // Explicitly omit agent so env HTTP(S)_PROXY is never consulted.
         agent: false,
-        headers: {
-          Host: hostHeader,
-          Accept: accept,
-          "User-Agent": userAgent,
-          Connection: "close",
-          // Explicitly omit Cookie / Authorization.
-        },
+        headers,
       },
       (res) => {
         const status = res.statusCode ?? 0;
@@ -585,7 +633,11 @@ export async function secureHttpsExchange(
     });
 
     req.on("error", finish);
-    req.end();
+    if (requestBody) {
+      req.end(requestBody);
+    } else {
+      req.end();
+    }
   });
 }
 

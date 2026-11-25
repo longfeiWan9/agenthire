@@ -67,7 +67,29 @@ export type ChallengeParseFailureReason =
   | "invalidPayTo"
   | "invalidAsset"
   | "invalidNetwork"
-  | "invalidScheme";
+  | "invalidScheme"
+  | "noEvmAcceptsParsed";
+
+/**
+ * Per-accept diagnostic for multi-entry envelopes.
+ * Failures are retained; a single ok entry never authorizes payment.
+ */
+export type AcceptEntryDiagnostic = {
+  readonly index: number;
+  readonly ok: boolean;
+  readonly reason: ChallengeParseFailureReason | null;
+  readonly message: string | null;
+  readonly scheme: string | null;
+  readonly network: string | null;
+  /** Coarse family hint from network / asset shape — not a payment grant. */
+  readonly assetFamily:
+    | "evm"
+    | "solana"
+    | "stellar"
+    | "algorand"
+    | "unknown"
+    | null;
+};
 
 export type ChallengeParseResult =
   | {
@@ -76,6 +98,7 @@ export type ChallengeParseResult =
       readonly httpStatus: number | null;
       readonly challenge: ParsedPaymentRequired;
       readonly warnings: readonly string[];
+      readonly entryDiagnostics: readonly AcceptEntryDiagnostic[];
     }
   | {
       readonly ok: false;
@@ -83,6 +106,7 @@ export type ChallengeParseResult =
       readonly httpStatus: number | null;
       readonly reason: ChallengeParseFailureReason;
       readonly message: string;
+      readonly entryDiagnostics?: readonly AcceptEntryDiagnostic[];
     };
 
 export type OfferPolicyReasonCode =
