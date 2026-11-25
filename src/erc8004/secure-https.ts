@@ -97,14 +97,60 @@ export type SecureHttpsDeps = {
   readonly timeoutMs?: number;
   /**
    * HTTP method. Defaults to GET. POST requires an explicit body; never adds
-   * Cookie / Authorization / payment / PoW headers.
+   * Cookie / Authorization / payment headers. PoW header only when
+   * `powSolution` is explicitly supplied (D7.3).
    */
   readonly method?: SecureHttpsMethod;
   /** Request body for POST (Buffer or UTF-8 string). Ignored for GET/HEAD. */
   readonly body?: Buffer | string;
   /** Content-Type for the request body (default application/json for POST). */
   readonly contentType?: string;
+  /**
+   * Optional `X-Pow-Solution` value (`token:nonce`). When set, sends exactly
+   * that header. Rejects control characters / oversized values. Live use
+   * requires separate one-time authorization — default callers omit this.
+   */
+  readonly powSolution?: string;
 };
+
+/** Max bytes accepted for an explicit X-Pow-Solution header value. */
+export const POW_SOLUTION_HEADER_MAX_BYTES = 512 as const;
+
+/**
+ * Validate a PoW solution header value before attaching it to a request.
+ * Shape: non-empty `token:nonce` with a single colon separator, no whitespace
+ * or control characters.
+ */
+export function validatePowSolutionHeaderValue(
+  value: string,
+): { readonly ok: true; readonly value: string } | { readonly ok: false; readonly message: string } {
+  if (typeof value !== "string") {
+    return { ok: false, message: "powSolution must be a string" };
+  }
+  if (value.length === 0) {
+    return { ok: false, message: "powSolution must be non-empty" };
+  }
+  if (Buffer.byteLength(value, "utf8") > POW_SOLUTION_HEADER_MAX_BYTES) {
+    return {
+      ok: false,
+      message: `powSolution exceeds ${POW_SOLUTION_HEADER_MAX_BYTES} byte limit`,
+    };
+  }
+  if (/[\r\n\0]/.test(value)) {
+    return { ok: false, message: "powSolution must not contain CR/LF/NUL" };
+  }
+  if (/\s/.test(value)) {
+    return { ok: false, message: "powSolution must not contain whitespace" };
+  }
+  const colon = value.indexOf(":");
+  if (colon <= 0 || colon !== value.lastIndexOf(":") || colon === value.length - 1) {
+    return {
+      ok: false,
+      message: 'powSolution must be exactly "token:nonce" (one colon)',
+    };
+  }
+  return { ok: true, value };
+}
 
 /**
  * Transport-level HTTPS response including non-2xx statuses.
@@ -528,13 +574,26 @@ export async function secureHttpsExchange(
   // Dialing the pinned IP also bypasses HTTP(S)_PROXY / ALL_PROXY env agents.
   const hostHeader = url.port ? `${url.hostname}:${url.port}` : url.hostname;
 
+  let powSolutionHeader: string | undefined;
+  if (deps.powSolution !== undefined) {
+    const validated = validatePowSolutionHeaderValue(deps.powSolution);
+    if (!validated.ok) {
+      throw new SecureFetchError("invalidUrl", validated.message);
+    }
+    powSolutionHeader = validated.value;
+  }
+
   const headers: Record<string, string | number> = {
     Host: hostHeader,
     Accept: accept,
     "User-Agent": userAgent,
     Connection: "close",
-    // Explicitly omit Cookie / Authorization / payment / PoW headers.
+    // Explicitly omit Cookie / Authorization / payment headers.
+    // PoW header only when powSolution was explicitly validated above.
   };
+  if (powSolutionHeader !== undefined) {
+    headers["X-Pow-Solution"] = powSolutionHeader;
+  }
   if (requestBody) {
     headers["Content-Type"] = requestContentType ?? "application/json";
     headers["Content-Length"] = requestBody.byteLength;
