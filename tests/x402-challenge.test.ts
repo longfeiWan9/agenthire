@@ -1,3 +1,7 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import {
   encodePaymentRequiredBase64,
@@ -15,6 +19,14 @@ import {
   evaluateOfferPolicy,
   evaluateProviderClaimWithoutChallenge,
 } from "../src/x402/offer-policy.ts";
+
+const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+const JSONVALIDATE_002_SNAPSHOT = join(
+  REPO_ROOT,
+  "docs/day6/evidence/agent402-jsonvalidate-002-response-snapshot.bin",
+);
+const JSONVALIDATE_002_SHA =
+  "d5bd9f9d9d52bb477b2f423fd370df61a27ac4be56932c0fce2bacc37d2e932b";
 
 /** Label: synthetic — not live provider evidence. */
 const FIXTURE_KIND = "synthetic" as const;
@@ -185,7 +197,10 @@ describe("x402 challenge parser (offline, synthetic)", () => {
       ]),
     });
     expect(badAsset.ok).toBe(false);
-    if (!badAsset.ok) expect(badAsset.reason).toBe("invalidAsset");
+    if (!badAsset.ok) {
+      expect(badAsset.reason).toBe("invalidAsset");
+      expect(badAsset.entryDiagnostics?.[0]?.ok).toBe(false);
+    }
   });
 
   it("parses multiple alternatives without implying policy pass", () => {
@@ -204,6 +219,7 @@ describe("x402 challenge parser (offline, synthetic)", () => {
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
     expect(parsed.challenge.accepts).toHaveLength(2);
+    expect(parsed.entryDiagnostics).toHaveLength(2);
 
     const policy = evaluateOfferPolicy(parsed, {
       paymentApprovalGranted: false,
@@ -216,6 +232,70 @@ describe("x402 challenge parser (offline, synthetic)", () => {
     expect(policy.evaluations[0]?.reasonCodes).toContain(
       "multipleAlternativesEvaluated",
     );
+  });
+
+  it("keeps EVM accepts when a Solana sibling fails asset shape (selective fail-closed)", () => {
+    const parsed = parseHttp402Challenge({
+      fixtureKind: FIXTURE_KIND,
+      httpStatus: 402,
+      body: paymentRequiredEnvelope([
+        sepoliaExactOffer({ maxAmountRequired: "1000" }),
+        {
+          scheme: "exact",
+          network: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+          amount: "1000",
+          asset: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+          payTo: "J7aN3PLJnTCF5qpEnvJHJsnCjcGuqC2rYtEM8Gv3xwg",
+          maxTimeoutSeconds: 300,
+        },
+        sepoliaExactOffer({
+          network: "eip155:8453",
+          asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          maxAmountRequired: "1000",
+        }),
+      ]),
+    });
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.challenge.accepts).toHaveLength(2);
+    expect(parsed.entryDiagnostics).toHaveLength(3);
+    expect(parsed.entryDiagnostics[1]?.ok).toBe(false);
+    expect(parsed.entryDiagnostics[1]?.reason).toBe("invalidAsset");
+    expect(parsed.entryDiagnostics[1]?.assetFamily).toBe("solana");
+    expect(parsed.warnings.some((w) => /accepts\[1\] skipped/.test(w))).toBe(
+      true,
+    );
+
+    const policy = evaluateOfferPolicy(parsed, {
+      paymentApprovalGranted: false,
+      declaredTaskId: null,
+    });
+    expect(policy.parseOk).toBe(true);
+    expect(policy.anyStructurallyCompatible).toBe(true);
+    expect(policy.anyPolicyPass).toBe(false);
+    expect(policy.evaluations).toHaveLength(2);
+  });
+
+  it("still fails closed when every accepts entry is non-EVM", () => {
+    const parsed = parseHttp402Challenge({
+      fixtureKind: FIXTURE_KIND,
+      httpStatus: 402,
+      body: paymentRequiredEnvelope([
+        {
+          scheme: "exact",
+          network: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+          amount: "1000",
+          asset: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+          payTo: "J7aN3PLJnTCF5qpEnvJHJsnCjcGuqC2rYtEM8Gv3xwg",
+          maxTimeoutSeconds: 300,
+        },
+      ]),
+    });
+    expect(parsed.ok).toBe(false);
+    if (parsed.ok) return;
+    expect(parsed.reason).toBe("invalidAsset");
+    expect(parsed.entryDiagnostics).toHaveLength(1);
+    expect(parsed.entryDiagnostics?.[0]?.assetFamily).toBe("solana");
   });
 });
 
@@ -332,5 +412,52 @@ describe("x402 offer policy (offline, synthetic)", () => {
     });
     expect(policy.parseOk).toBe(false);
     expect(policy.anyPolicyPass).toBe(false);
+  });
+});
+
+describe("JSONVALIDATE-002 captured 402 (offline regression)", () => {
+  it("re-parses the immutable snapshot: EVM accepts kept; no Sepolia policy pass", () => {
+    const raw = readFileSync(JSONVALIDATE_002_SNAPSHOT);
+    expect(createHash("sha256").update(raw).digest("hex")).toBe(
+      JSONVALIDATE_002_SHA,
+    );
+    const body = JSON.parse(raw.toString("utf8")) as {
+      accepts: unknown[];
+      x402Version: number;
+    };
+    expect(body.x402Version).toBe(2);
+    expect(body.accepts).toHaveLength(17);
+
+    const parsed = parseHttp402Challenge({
+      fixtureKind: "captured",
+      httpStatus: 402,
+      body,
+    });
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.challenge.accepts).toHaveLength(14);
+    expect(parsed.entryDiagnostics).toHaveLength(17);
+    expect(parsed.entryDiagnostics[12]?.ok).toBe(false);
+    expect(parsed.entryDiagnostics[12]?.reason).toBe("invalidAsset");
+    expect(parsed.entryDiagnostics[12]?.assetFamily).toBe("solana");
+    expect(parsed.entryDiagnostics[13]?.assetFamily).toBe("stellar");
+    expect(parsed.entryDiagnostics[14]?.assetFamily).toBe("algorand");
+
+    const policy = evaluateOfferPolicy(parsed, {
+      paymentApprovalGranted: false,
+      expectedResource: "https://agent402.tools/api/json-validate",
+      declaredTaskId: null,
+    });
+    expect(policy.parseOk).toBe(true);
+    expect(policy.anyStructurallyCompatible).toBe(false);
+    expect(policy.anyPolicyPass).toBe(false);
+    expect(
+      policy.evaluations.every(
+        (e) =>
+          e.requirement?.network !== APPROVED_PAYMENT_NETWORK &&
+          e.requirement?.asset.toLowerCase() !==
+            APPROVED_SEPOLIA_TEST_USDC.toLowerCase(),
+      ),
+    ).toBe(true);
   });
 });

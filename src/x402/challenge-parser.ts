@@ -7,6 +7,7 @@
 
 import { isAddress, getAddress } from "viem";
 import type {
+  AcceptEntryDiagnostic,
   ChallengeParseFailureReason,
   ChallengeParseResult,
   ParsedPaymentRequired,
@@ -99,8 +100,37 @@ function fail(
   httpStatus: number | null,
   reason: ChallengeParseFailureReason,
   message: string,
+  entryDiagnostics?: readonly AcceptEntryDiagnostic[],
 ): ChallengeParseResult {
-  return { ok: false, fixtureKind, httpStatus, reason, message };
+  return {
+    ok: false,
+    fixtureKind,
+    httpStatus,
+    reason,
+    message,
+    ...(entryDiagnostics ? { entryDiagnostics } : {}),
+  };
+}
+
+/** Coarse family hint for diagnostics only — never a payment decision. */
+export function inferAcceptAssetFamily(input: {
+  readonly network?: unknown;
+  readonly asset?: unknown;
+}): AcceptEntryDiagnostic["assetFamily"] {
+  const network =
+    typeof input.network === "string" ? input.network.trim().toLowerCase() : "";
+  if (network.startsWith("eip155:")) return "evm";
+  if (network.startsWith("solana:")) return "solana";
+  if (network.startsWith("stellar:")) return "stellar";
+  if (network.startsWith("algorand:")) return "algorand";
+  const asset = typeof input.asset === "string" ? input.asset.trim() : "";
+  if (/^0x[0-9a-fA-F]{40}$/.test(asset)) return "evm";
+  if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(asset) && !asset.startsWith("0x")) {
+    return "solana";
+  }
+  if (/^[0-9]+$/.test(asset)) return "algorand";
+  if (asset.length >= 56 && /^[A-Z0-9]+$/.test(asset)) return "stellar";
+  return network || asset ? "unknown" : null;
 }
 
 function parseAmount(value: unknown): string | null {
@@ -342,13 +372,81 @@ export function parsePaymentRequiredObject(
     );
   }
 
+  // Selective fail-closed: keep EVM-parseable accepts; retain diagnostics for
+  // siblings that fail (e.g. Solana/Stellar/Algorand asset shapes). Never
+  // invent payment compatibility from a skipped entry. Envelope still fails
+  // closed when zero accepts parse as EVM payment requirements.
   const accepts: ParsedPaymentRequirement[] = [];
+  const entryDiagnostics: AcceptEntryDiagnostic[] = [];
+  const warnings: string[] = [];
+  let firstEntryFailure:
+    | {
+        readonly reason: ChallengeParseFailureReason;
+        readonly message: string;
+      }
+    | null = null;
+
   for (let i = 0; i < value.accepts.length; i += 1) {
-    const parsed = parseRequirement(value.accepts[i], i);
+    const rawEntry = value.accepts[i];
+    const schemeHint =
+      isPlainObject(rawEntry) && typeof rawEntry.scheme === "string"
+        ? rawEntry.scheme.trim()
+        : null;
+    const networkHint =
+      isPlainObject(rawEntry) && typeof rawEntry.network === "string"
+        ? rawEntry.network.trim()
+        : null;
+    const assetHint = isPlainObject(rawEntry) ? rawEntry.asset : undefined;
+    const family = inferAcceptAssetFamily({
+      network: networkHint,
+      asset: assetHint,
+    });
+
+    const parsed = parseRequirement(rawEntry, i);
     if (!parsed.ok) {
-      return fail(fixtureKind, httpStatus, parsed.reason, parsed.message);
+      entryDiagnostics.push({
+        index: i,
+        ok: false,
+        reason: parsed.reason,
+        message: parsed.message,
+        scheme: schemeHint,
+        network: networkHint,
+        assetFamily: family,
+      });
+      warnings.push(
+        `accepts[${i}] skipped (${parsed.reason}): ${parsed.message}`,
+      );
+      if (!firstEntryFailure) {
+        firstEntryFailure = {
+          reason: parsed.reason,
+          message: parsed.message,
+        };
+      }
+      continue;
     }
+
+    entryDiagnostics.push({
+      index: i,
+      ok: true,
+      reason: null,
+      message: null,
+      scheme: parsed.requirement.scheme,
+      network: parsed.requirement.network,
+      assetFamily: "evm",
+    });
     accepts.push(parsed.requirement);
+  }
+
+  if (accepts.length === 0) {
+    return fail(
+      fixtureKind,
+      httpStatus,
+      firstEntryFailure?.reason ?? "noEvmAcceptsParsed",
+      firstEntryFailure
+        ? `${firstEntryFailure.message} (no EVM-parseable accepts retained; ${entryDiagnostics.length} entr${entryDiagnostics.length === 1 ? "y" : "ies"} examined)`
+        : "No EVM-parseable accepts retained",
+      entryDiagnostics,
+    );
   }
 
   const error =
@@ -358,7 +456,6 @@ export function parsePaymentRequiredObject(
         ? null
         : String(value.error);
 
-  const warnings: string[] = [];
   if (source === "header" && httpStatus !== null && httpStatus !== 402) {
     warnings.push(
       `PAYMENT-REQUIRED header present but HTTP status is ${httpStatus}, not 402`,
@@ -377,6 +474,7 @@ export function parsePaymentRequiredObject(
       source,
     },
     warnings,
+    entryDiagnostics,
   };
 }
 
