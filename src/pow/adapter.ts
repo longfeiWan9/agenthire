@@ -23,6 +23,7 @@ import {
 import {
   assertExactPowChallengeUrl,
   assertExactPowSubmitUrl,
+  checkChallengeExpiry,
   parsePowChallengeBytes,
 } from "./challenge.ts";
 import { matchesExpectedPowEnvelope, parseValidateEnvelopeBytes } from "./envelope.ts";
@@ -41,10 +42,12 @@ import {
   POW_CHALLENGE_TIMEOUT_MS,
   POW_CHALLENGE_URL,
   POW_EXPECTED_ENVELOPE,
+  POW_EXPIRY_SAFETY_MARGIN_MS,
   POW_SUBMIT_MAX_BYTES,
   POW_SUBMIT_TIMEOUT_MS,
   POW_SUBMIT_URL,
   type PowChallenge,
+  type PowChallengeParseMode,
   type PowRunMode,
   type PowSession,
   type PowSolverBudget,
@@ -72,8 +75,13 @@ export type RunPowPreparationInput = {
   readonly transport?: PowTransport;
   readonly solverBudget?: Partial<PowSolverBudget>;
   readonly signal?: AbortSignal;
+  /** Injectable wall clock (ms since epoch) for expiry + solver budgets. */
   readonly now?: () => number;
   readonly clockIso?: string;
+  /** Override challenge JSON parse mode (default: live→contract, else compat). */
+  readonly challengeParseMode?: PowChallengeParseMode;
+  /** Expiry safety margin in ms (default POW_EXPIRY_SAFETY_MARGIN_MS). */
+  readonly expiryMarginMs?: number;
   /** Test hook: skip marker writes even in approved-live (still requires auth flag). */
   readonly skipLiveMarkersForTest?: boolean;
 };
@@ -106,6 +114,7 @@ function sha256Hex(buf: Buffer): string {
 async function fetchChallenge(input: {
   readonly transport: PowTransport;
   readonly networkLive: boolean;
+  readonly parseMode: PowChallengeParseMode;
 }): Promise<
   | {
       readonly ok: true;
@@ -150,10 +159,10 @@ async function fetchChallenge(input: {
     };
   }
 
-  const parsed = parsePowChallengeBytes(
-    exchange.body,
-    input.networkLive ? "live" : "synthetic",
-  );
+  const parsed = parsePowChallengeBytes(exchange.body, {
+    fixtureKind: input.networkLive ? "live" : "synthetic",
+    mode: input.parseMode,
+  });
   if (!parsed.ok) {
     return {
       ok: false,
@@ -311,6 +320,11 @@ export async function runPowPreparation(
   }
 
   const networkLive = runMode === "approved-live";
+  const parseMode: PowChallengeParseMode =
+    input.challengeParseMode ??
+    (networkLive ? "agent402-contract" : "compat");
+  const expiryMarginMs = input.expiryMarginMs ?? POW_EXPIRY_SAFETY_MARGIN_MS;
+  const nowFn = input.now ?? (() => Date.now());
   // D7.3 hard gate: never default to live network transport without auth.
   const transport: PowTransport =
     input.transport ??
@@ -327,7 +341,11 @@ export async function runPowPreparation(
   if (!step.ok) throw new Error(step.message);
   session = step.session;
 
-  const challengeResult = await fetchChallenge({ transport, networkLive });
+  const challengeResult = await fetchChallenge({
+    transport,
+    networkLive,
+    parseMode,
+  });
   if (!challengeResult.ok) {
     step = applyPowTransition(
       session,
@@ -362,6 +380,34 @@ export async function runPowPreparation(
   if (!step.ok) throw new Error(step.message);
   session = step.session;
 
+  // --- expiry before solve (contract always; compat when expiresAt present) ---
+  const requireExpiresAt = parseMode === "agent402-contract";
+  const expiryBeforeSolve = checkChallengeExpiry({
+    expiresAtUnixSeconds: challengeResult.challenge.expiresAtUnixSeconds,
+    nowMs: nowFn(),
+    marginMs: expiryMarginMs,
+    requireExpiresAt,
+  });
+  if (!expiryBeforeSolve.ok) {
+    step = applyPowTransition(
+      session,
+      {
+        type: "block",
+        terminal: "challengeInvalid",
+        reason: `${expiryBeforeSolve.reason}: ${expiryBeforeSolve.message}`,
+      },
+      clock,
+    );
+    if (!step.ok) throw new Error(step.message);
+    return {
+      session: step.session,
+      requestBodySha256: bodySha,
+      simulationOnly: !networkLive,
+      providerExecutionVerified: false,
+      nonActions: POW_NON_ACTIONS,
+    };
+  }
+
   // --- solve ---
   step = applyPowTransition(session, { type: "beginSolve" }, clock);
   if (!step.ok) throw new Error(step.message);
@@ -371,7 +417,7 @@ export async function runPowPreparation(
     challenge: challengeResult.challenge,
     budget: input.solverBudget,
     signal: input.signal,
-    now: input.now,
+    now: nowFn,
   };
   const solved = await solvePowChallenge(solveInput);
   if (!solved.ok) {
@@ -404,6 +450,33 @@ export async function runPowPreparation(
   );
   if (!step.ok) throw new Error(step.message);
   session = step.session;
+
+  // --- expiry before POST ---
+  const expiryBeforePost = checkChallengeExpiry({
+    expiresAtUnixSeconds: challengeResult.challenge.expiresAtUnixSeconds,
+    nowMs: nowFn(),
+    marginMs: expiryMarginMs,
+    requireExpiresAt,
+  });
+  if (!expiryBeforePost.ok) {
+    step = applyPowTransition(
+      session,
+      {
+        type: "block",
+        terminal: "challengeInvalid",
+        reason: `${expiryBeforePost.reason}: ${expiryBeforePost.message}`,
+      },
+      clock,
+    );
+    if (!step.ok) throw new Error(step.message);
+    return {
+      session: step.session,
+      requestBodySha256: bodySha,
+      simulationOnly: !networkLive,
+      providerExecutionVerified: false,
+      nonActions: POW_NON_ACTIONS,
+    };
+  }
 
   // --- submit ---
   step = applyPowTransition(session, { type: "beginSubmit" }, clock);

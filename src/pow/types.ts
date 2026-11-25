@@ -41,6 +41,23 @@ export const POW_SUBMIT_TIMEOUT_MS = 5_000 as const;
 export const POW_CHALLENGE_MAX_BYTES = 65_536 as const;
 export const POW_SUBMIT_MAX_BYTES = 65_536 as const;
 
+/**
+ * Agent402 challenge API contract (Stage A schema observation, redacted).
+ * Adapter schema hardening — not a mining specification.
+ */
+export const POW_CONTRACT_ALGORITHM = "sha256" as const;
+export const POW_CONTRACT_SUBMIT_HEADER = "X-Pow-Solution" as const;
+export const POW_CONTRACT_SUBMIT_FORMAT = "<token>:<nonce>" as const;
+
+/** Refuse solve/submit when fewer than this many ms remain before expiresAt. */
+export const POW_EXPIRY_SAFETY_MARGIN_MS = 5_000 as const;
+
+/** Stage A response-snapshot SHA-256 (immutable evidence; do not modify). */
+export const POW_STAGE_A_RESPONSE_SNAPSHOT_SHA256 =
+  "73dc318d01854111633a8af3ac5e0354b8c5f7b4169fbbcd154fa143cdaa8c3a" as const;
+
+export type PowChallengeParseMode = "compat" | "agent402-contract";
+
 export type PowRunMode = "offline-simulation" | "approved-live";
 
 /**
@@ -97,10 +114,19 @@ export type PowChallenge = {
   readonly token: string;
   readonly challenge: string;
   readonly difficultyBits: number;
-  readonly expiresAt: string | null;
+  /**
+   * Challenge expiry as Unix seconds (UTC). Required under agent402-contract
+   * parse mode; optional under compat/synthetic fixtures.
+   */
+  readonly expiresAtUnixSeconds: number | null;
+  readonly algorithm: string | null;
+  readonly submitHeader: string | null;
+  readonly submitFormat: string | null;
+  readonly ttlSeconds: number | null;
   readonly slug: typeof POW_SLUG;
   readonly rawKeys: readonly string[];
   readonly fixtureKind: "synthetic" | "captured" | "live";
+  readonly parseMode: PowChallengeParseMode;
 };
 
 export type PowSolution = {

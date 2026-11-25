@@ -11,10 +11,15 @@ const challenge: PowChallenge = {
   token: "tok",
   challenge: "chal",
   difficultyBits: 4,
-  expiresAt: null,
+  expiresAtUnixSeconds: null,
+  algorithm: null,
+  submitHeader: null,
+  submitFormat: null,
+  ttlSeconds: null,
   slug: "json-validate",
   rawKeys: ["challenge", "difficultyBits", "token"],
   fixtureKind: "synthetic",
+  parseMode: "compat",
 };
 
 const solution: PowSolution = {

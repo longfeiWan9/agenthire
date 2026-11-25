@@ -52,10 +52,15 @@ function softChallenge(): PowChallenge {
     token: "sim-token",
     challenge: "sim-challenge-v1",
     difficultyBits: 8,
-    expiresAt: null,
+    expiresAtUnixSeconds: null,
+    algorithm: null,
+    submitHeader: null,
+    submitFormat: null,
+    ttlSeconds: null,
     slug: "json-validate",
     rawKeys: ["challenge", "difficultyBits", "slug", "token"],
     fixtureKind: "synthetic",
+    parseMode: "compat",
   };
 }
 

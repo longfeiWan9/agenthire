@@ -497,9 +497,9 @@ export function analyzeAdapterCompatibility(
   const assumptions = [
     "Adapter aliases token|id|challengeId for token",
     "Adapter aliases challenge|puzzle|prefix|seed for challenge seed",
-    "Adapter may fall back challenge := token when challenge field absent",
-    "Adapter treats difficultyBits|difficulty|leadingZeroBits|bits|zeros as integer bits (0–256)",
-    "Adapter expects optional expiresAt|expires_at|expiry|exp as string only (pickString)",
+    "Compat mode may fall back challenge := token when challenge field absent; agent402-contract forbids that fallback",
+    "Adapter treats difficultyBits|difficulty|leadingZeroBits|bits|zeros as integer bits (0–256); contract prefers numeric difficulty",
+    "Adapter agent402-contract mode requires numeric expiresAt (Unix seconds); compat accepts number or ISO/numeric string",
     "Header format assumed token:nonce — Stage A observes submitFormat/submitHeader when present but does not solve",
   ];
   const mismatches: string[] = [];
@@ -543,9 +543,12 @@ export function analyzeAdapterCompatibility(
           ? "array"
           : typeof expiresAtRaw;
   if (expiresAtJsType === "number") {
-    mismatches.push(
-      "expiresAt is a number (unix seconds observed) but adapter pickString only accepts string — normalized expiresAt would be null (silent drop)",
-    );
+    // Stage B agent402-contract parse accepts numeric Unix-seconds expiresAt.
+    if (parsed.ok && parsed.challenge.expiresAtUnixSeconds == null) {
+      mismatches.push(
+        "expiresAt is a number but adapter did not capture expiresAtUnixSeconds",
+      );
+    }
   }
 
   const ruleText = typeof obj.rule === "string" ? obj.rule : "";
@@ -600,7 +603,7 @@ export function analyzeAdapterCompatibility(
     expiresAtValueRedacted:
       expiresAtRaw === undefined ? null : redactScalar(expiresAtRaw),
     adapterExpiresAtCaptured: parsed.ok
-      ? parsed.challenge.expiresAt != null
+      ? parsed.challenge.expiresAtUnixSeconds != null
       : false,
     algorithm: typeof obj.algorithm === "string" ? obj.algorithm : null,
     submitHeader,

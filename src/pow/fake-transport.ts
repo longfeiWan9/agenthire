@@ -122,16 +122,34 @@ export function createFakePowTransport(
           started,
         );
       }
-      const body = Buffer.from(
-        JSON.stringify({
-          token: options.challenge.token,
-          challenge: options.challenge.challenge,
-          difficultyBits: options.challenge.difficultyBits,
-          slug: options.challenge.slug,
-          expiresAt: options.challenge.expiresAt,
-        }),
-        "utf8",
-      );
+      const challengeJson: Record<string, unknown> = {
+        token: options.challenge.token,
+        challenge: options.challenge.challenge,
+        slug: options.challenge.slug,
+      };
+      // Emit Stage A contract shape when algorithm/submit metadata present;
+      // otherwise emit compat difficultyBits for synthetic fixtures.
+      if (
+        options.challenge.parseMode === "agent402-contract" ||
+        options.challenge.algorithm != null
+      ) {
+        challengeJson.algorithm =
+          options.challenge.algorithm ?? "sha256";
+        challengeJson.difficulty = options.challenge.difficultyBits;
+        challengeJson.submitHeader =
+          options.challenge.submitHeader ?? "X-Pow-Solution";
+        challengeJson.submitFormat =
+          options.challenge.submitFormat ?? "<token>:<nonce>";
+        if (options.challenge.ttlSeconds != null) {
+          challengeJson.ttlSeconds = options.challenge.ttlSeconds;
+        }
+      } else {
+        challengeJson.difficultyBits = options.challenge.difficultyBits;
+      }
+      if (options.challenge.expiresAtUnixSeconds != null) {
+        challengeJson.expiresAt = options.challenge.expiresAtUnixSeconds;
+      }
+      const body = Buffer.from(JSON.stringify(challengeJson), "utf8");
       return exchangeOf(url, challengeStatus, body, {}, now, started);
     }
 
