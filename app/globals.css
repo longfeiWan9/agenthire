@@ -49,10 +49,37 @@ a:hover {
   text-underline-offset: 3px;
 }
 
+:focus-visible {
+  outline: 3px solid var(--teal);
+  outline-offset: 3px;
+}
+
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -3rem;
+  z-index: 100;
+  padding: 0.55rem 0.9rem;
+  border-radius: 8px;
+  background: var(--teal-deep);
+  color: #fff;
+  font-size: 0.9rem;
+  transition: top 0.15s ease;
+}
+
+.skip-link:focus {
+  top: 0.75rem;
+  text-decoration: none;
+}
+
 main {
   width: min(1120px, calc(100% - 2rem));
   margin: 0 auto;
   padding: 1.5rem 0 4rem;
+}
+
+main:focus {
+  outline: none;
 }
 
 .site-header {
@@ -106,7 +133,8 @@ main {
   display: grid;
   gap: 1.25rem;
   padding: 2.4rem 0 1.5rem;
-  animation: rise 0.7s ease both;
+  /* forwards only — avoid animation-fill-mode:both hiding first paint at opacity 0 */
+  animation: rise 0.7s ease forwards;
 }
 
 .hero h1 {
@@ -161,7 +189,7 @@ main {
   border-radius: var(--radius);
   background: rgba(255, 255, 255, 0.78);
   box-shadow: var(--shadow);
-  animation: rise 0.85s ease both;
+  animation: rise 0.85s ease forwards;
 }
 
 .search-row {
@@ -210,10 +238,14 @@ button.secondary,
 
 button:disabled,
 .btn:disabled,
-.btn[aria-disabled="true"] {
-  opacity: 0.55;
+.btn[aria-disabled="true"],
+button[aria-disabled="true"] {
+  opacity: 0.42;
   cursor: not-allowed;
   transform: none;
+  background: color-mix(in srgb, var(--line) 55%, #fff);
+  border-color: var(--line);
+  color: var(--ink-soft);
 }
 
 .category-grid {
@@ -351,6 +383,11 @@ button:disabled,
   color: #fff;
 }
 
+.pagination-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .detail-grid {
   display: grid;
   gap: 1rem;
@@ -460,12 +497,24 @@ button:disabled,
 
 @keyframes rise {
   from {
-    opacity: 0;
-    transform: translateY(10px);
+    opacity: 0.92;
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero,
+  .search-panel,
+  .category-link,
+  .capability-card,
+  button,
+  .btn {
+    animation: none !important;
+    transition: none !important;
   }
 }
 
@@ -479,6 +528,11 @@ button:disabled,
   }
 
   .site-header-inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .results-meta {
     flex-direction: column;
     align-items: flex-start;
   }

@@ -45,8 +45,8 @@ export function HireConsole(props: {
 
   if (!session.supported) {
     return (
-      <section className="panel">
-        <h2>Hire console</h2>
+      <section className="panel" aria-labelledby="hire-console-heading">
+        <h2 id="hire-console-heading">Hire console</h2>
         <div className="callout danger" role="status">
           {session.blockReason}
         </div>
@@ -59,8 +59,14 @@ export function HireConsole(props: {
   }
 
   return (
-    <section className="panel">
-      <h2>Offline hire console — {props.displayName}</h2>
+    <section
+      className="panel"
+      aria-labelledby="hire-console-heading"
+      aria-busy={pending}
+    >
+      <h2 id="hire-console-heading">
+        Offline hire console — {props.displayName}
+      </h2>
       <p className="mono">capabilityId={props.capabilityId}</p>
       <div className="callout" role="note">
         Live quote unavailable. Interface undocumented. Payment unavailable /
@@ -104,6 +110,12 @@ export function HireConsole(props: {
           <button
             type="button"
             disabled={pending || !session.input}
+            aria-disabled={pending || !session.input}
+            title={
+              session.input
+                ? "Create offline HireJob"
+                : "Validate ticker or companyName first"
+            }
             onClick={() => run(() => actionCreateHireJob(props.capabilityId))}
           >
             Create HireJob
@@ -144,7 +156,7 @@ export function HireConsole(props: {
       {session.liveQuote ? (
         <div style={{ marginTop: "1rem" }}>
           <h3>Live quote status</h3>
-          <div className="callout danger">
+          <div className="callout danger" role="status">
             Live quote unavailable —{" "}
             {session.liveQuote.notes[0] ?? "unknown interface"}
           </div>
@@ -163,6 +175,7 @@ export function HireConsole(props: {
             type="button"
             className="secondary"
             disabled={pending || !session.job}
+            aria-disabled={pending || !session.job}
             onClick={() =>
               run(() => actionRevealSyntheticQuote(props.capabilityId))
             }
@@ -172,6 +185,7 @@ export function HireConsole(props: {
           <button
             type="button"
             disabled={pending || !session.session}
+            aria-disabled={pending || !session.session}
             onClick={() => run(() => actionSimulateApprove(props.capabilityId))}
           >
             Simulation approve
@@ -180,6 +194,7 @@ export function HireConsole(props: {
             type="button"
             className="secondary"
             disabled={pending || !session.session}
+            aria-disabled={pending || !session.session}
             onClick={() => run(() => actionSimulateReject(props.capabilityId))}
           >
             Simulation reject
@@ -188,6 +203,7 @@ export function HireConsole(props: {
             type="button"
             className="secondary"
             disabled={pending || !session.session}
+            aria-disabled={pending || !session.session}
             onClick={() => run(() => actionModifiedBinding(props.capabilityId))}
           >
             Try modified fingerprint
@@ -196,6 +212,7 @@ export function HireConsole(props: {
             type="button"
             className="secondary"
             disabled={pending || !session.session}
+            aria-disabled={pending || !session.session}
             onClick={() => run(() => actionRevokeApproval(props.capabilityId))}
           >
             Revoke approval
@@ -220,20 +237,39 @@ export function HireConsole(props: {
         ) : null}
       </div>
 
+      {session.actionFeedback ? (
+        <div
+          className={
+            /ok=false|failed|Revoke|rejected|empty:|invalid/i.test(
+              session.actionFeedback,
+            )
+              ? "callout danger"
+              : "callout"
+          }
+          role="status"
+          data-testid="hire-action-feedback"
+        >
+          {session.actionFeedback}
+        </div>
+      ) : null}
+
       <div style={{ marginTop: "1rem" }}>
         <h3>Run named offline fixture</h3>
         <div className="hire-actions">
-          <select
-            aria-label="Fixture kind"
-            value={fixture}
-            onChange={(e) => setFixture(e.target.value as HireJobFixtureKind)}
-          >
-            {FIXTURES.map((f) => (
-              <option key={f} value={f}>
-                {f}
-              </option>
-            ))}
-          </select>
+          <label htmlFor="hire-fixture">
+            Fixture kind
+            <select
+              id="hire-fixture"
+              value={fixture}
+              onChange={(e) => setFixture(e.target.value as HireJobFixtureKind)}
+            >
+              {FIXTURES.map((f) => (
+                <option key={f} value={f}>
+                  {f}
+                </option>
+              ))}
+            </select>
+          </label>
           <button
             type="button"
             disabled={pending}
@@ -270,11 +306,11 @@ export function HireConsole(props: {
       ) : null}
 
       {session.notes.length > 0 ? (
-        <details style={{ marginTop: "1rem" }}>
+        <details style={{ marginTop: "1rem" }} open={Boolean(session.actionFeedback)}>
           <summary>Session notes</summary>
           <ul>
-            {session.notes.map((n) => (
-              <li key={n} className="mono">
+            {session.notes.map((n, i) => (
+              <li key={`${i}-${n.slice(0, 48)}`} className="mono">
                 {n}
               </li>
             ))}

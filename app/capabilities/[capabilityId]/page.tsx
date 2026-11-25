@@ -158,7 +158,13 @@ export default async function CapabilityDetailPage({
               Live hire disabled — {readiness}. No offline adapter for this
               capability. No generic executor.
             </div>
-            <button type="button" className="btn" disabled>
+            <button
+              type="button"
+              className="btn"
+              disabled
+              aria-disabled="true"
+              title="Live hire disabled for this capability"
+            >
               Live hire unavailable
             </button>
           </>

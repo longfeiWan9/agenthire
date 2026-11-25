@@ -16,14 +16,18 @@ export function Pagination(props: {
   return (
     <nav className="pagination" aria-label="Results pages">
       {page > 1 ? (
-        <Link href={hrefForPage(page - 1)}>Previous</Link>
+        <Link href={hrefForPage(page - 1)} rel="prev">
+          Previous
+        </Link>
       ) : (
-        <span aria-disabled="true">Previous</span>
+        <span className="pagination-disabled" aria-disabled="true">
+          Previous
+        </span>
       )}
       {windowStart > 1 ? (
         <>
           <Link href={hrefForPage(1)}>1</Link>
-          {windowStart > 2 ? <span>…</span> : null}
+          {windowStart > 2 ? <span aria-hidden="true">…</span> : null}
         </>
       ) : null}
       {pages.map((p) =>
@@ -39,14 +43,18 @@ export function Pagination(props: {
       )}
       {windowEnd < totalPages ? (
         <>
-          {windowEnd < totalPages - 1 ? <span>…</span> : null}
+          {windowEnd < totalPages - 1 ? <span aria-hidden="true">…</span> : null}
           <Link href={hrefForPage(totalPages)}>{totalPages}</Link>
         </>
       ) : null}
       {page < totalPages ? (
-        <Link href={hrefForPage(page + 1)}>Next</Link>
+        <Link href={hrefForPage(page + 1)} rel="next">
+          Next
+        </Link>
       ) : (
-        <span aria-disabled="true">Next</span>
+        <span className="pagination-disabled" aria-disabled="true">
+          Next
+        </span>
       )}
     </nav>
   );
