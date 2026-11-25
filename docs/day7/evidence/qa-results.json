@@ -1,0 +1,155 @@
+[
+  {
+    "id": 1,
+    "name": "discover-home",
+    "brand": "AgentHire",
+    "h1": "Discover. Hire. Pay AI Agents.",
+    "prompt": "What do you need an agent to do?",
+    "nav": [
+      "Discover",
+      "Agents",
+      "Categories",
+      "How It Works",
+      "Demo"
+    ],
+    "agentCards": 3,
+    "networkFilter": true,
+    "listingFilter": true,
+    "footer": "AgentHire D7.1 · STRICTLY_OFFLINE · local catalog evidence only · not 690 verified agents · not ready to hire"
+  },
+  {
+    "id": 2,
+    "name": "network-sepolia",
+    "url": "http://127.0.0.1:3000/?network=base-sepolia&listing=all",
+    "agentNames": [
+      "QuantJourney Research Agent Fabric"
+    ],
+    "labels": [
+      "Base Sepolia",
+      "Registered identity",
+      "Developer Tools, Research & Intelligence",
+      "0 curated · 4 advertised"
+    ]
+  },
+  {
+    "id": 3,
+    "name": "network-mainnet-curated",
+    "agentNames": [
+      "Agent402"
+    ],
+    "agentCount": 1
+  },
+  {
+    "id": 4,
+    "name": "search-sec",
+    "agentNames": [
+      "QuantJourney Research Agent Fabric",
+      "Agent402",
+      "QuantJourney Research Agent Fabric",
+      "Agent Zero"
+    ],
+    "explanations": [
+      "Matched advertised skills / metadata",
+      "Matched advertised skills / metadata",
+      "Matched advertised skills / metadata",
+      "Matched advertised skills / metadata"
+    ],
+    "hasSecLink": false
+  },
+  {
+    "id": 5,
+    "name": "categories-hub",
+    "h1": "Categories",
+    "lede": "Taxonomy-first browsing. Pick a task domain to see which agents advertise capabilities there. Discover remains the task-search entry; Categories is the shelf in",
+    "categoryLinks": 5,
+    "hasAgentCards": 0,
+    "mentionsTaxonomy": true
+  },
+  {
+    "id": 6,
+    "name": "category-agents",
+    "h1": "Research & Intelligence",
+    "agentCards": 2
+  },
+  {
+    "id": 7,
+    "name": "agents-directory",
+    "h1": "Agents",
+    "agentCards": 5
+  },
+  {
+    "id": 8,
+    "name": "agent-qj-discovery",
+    "h1": "QuantJourney Research Agent Fabric",
+    "linkage": [
+      "Kept separate from \"QuantJourney Research Agent Fabric\" — name resemblance is not provenance-validated linkage. Owner ≠ ",
+      "Evidence levels are honest L0 views from local artifacts. Live hire, payment, and remote execution remain blocked."
+    ],
+    "hasSec": true,
+    "registeredChip": [
+      "Unknown origin",
+      "Not registered here",
+      "35 curated / 35 advertised"
+    ]
+  },
+  {
+    "id": 9,
+    "name": "agent-qj-registered",
+    "h1": "QuantJourney Research Agent Fabric",
+    "network": [
+      "Base Sepolia",
+      "ERC-8004 registered",
+      "0 curated / 4 advertised"
+    ],
+    "hasSecHire": false,
+    "incompleteSection": true
+  },
+  {
+    "id": 10,
+    "name": "capability-sec",
+    "h1": "SEC Company Identity",
+    "parentAgent": "QuantJourney Research Agent Fabric",
+    "hireCta": [
+      "Start guided offline hire"
+    ],
+    "notInspected": true
+  },
+  {
+    "id": 11,
+    "name": "hire-unavailable",
+    "heading": "Guided hire unavailable",
+    "danger": "Live hire blocked — offline SEC demo is available only for cap:79da211975c2 (QuantJourney SEC Company Identity). No generic executor."
+  },
+  {
+    "id": 12,
+    "name": "hire-guided-initial",
+    "steps": [
+      "1Understand",
+      "2Enter inputs",
+      "3Review quote",
+      "4Approve / reject",
+      "5Simulated result"
+    ],
+    "guidance": true
+  },
+  {
+    "id": 13,
+    "name": "hire-guided-after-fixture",
+    "banner": "SIMULATED RESULT — NOT RETURNED BY AN EXTERNAL PROVIDER; NO PAYMENT WAS MADE.",
+    "feedback": "Fixture success-aapl finished — providerExecutionVerified=false",
+    "stepActive": "5Simulated result"
+  },
+  {
+    "id": 14,
+    "name": "discover-mobile",
+    "brand": "AgentHire",
+    "agentCards": 3,
+    "width": 390
+  },
+  {
+    "id": 15,
+    "name": "listing-incomplete-mainnet",
+    "agentCards": 2,
+    "bodyHasIncomplete": true
+  }
+]

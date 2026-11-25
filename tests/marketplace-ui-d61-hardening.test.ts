@@ -63,7 +63,7 @@ describe("D6.1 UI hardening regressions", () => {
     expect(header).toMatch(/skip-link/);
     expect(header).toMatch(/#main-content/);
     expect(layout).toMatch(/id="main-content"/);
-    expect(layout).toMatch(/AgentHire D6\.1/);
+    expect(layout).toMatch(/AgentHire D7\.1/);
     expect(css).toMatch(/:focus-visible/);
     expect(css).toMatch(/prefers-reduced-motion/);
     expect(css).not.toMatch(/animation:\s*rise[^;]*\bboth\b/);
@@ -86,12 +86,12 @@ describe("D6.1 UI hardening regressions", () => {
     expect(mainnet).not.toBeNull();
     expect(sepolia).not.toBeNull();
     expect(external).not.toBeNull();
-    expect(networkLabelFor(mainnet!)).toBe("Base Mainnet (8453)");
-    expect(networkLabelFor(sepolia!)).toBe("Base Sepolia (84532)");
-    expect(networkLabelFor(external!)).toBe("External / unregistered");
+    expect(networkLabelFor(mainnet!)).toBe("Base Mainnet (registration)");
+    expect(networkLabelFor(sepolia!)).toBe("Base Sepolia (registration)");
+    expect(networkLabelFor(external!)).toBe("Unknown origin");
 
     const card = read("components/CapabilityCard.tsx");
-    expect(card).toMatch(/networkLabelFor/);
+    expect(card).toMatch(/compactCardLabelsFor/);
     expect(card).not.toMatch(/record\.protocols\.join/);
   });
 

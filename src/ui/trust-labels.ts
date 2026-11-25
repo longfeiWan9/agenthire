@@ -106,17 +106,45 @@ export function interfaceFieldLabel(
 }
 
 /**
- * Honest network label from agent profile id — discovery clarity only.
+ * Registration-network label from agent profile id — discovery clarity only.
  * Does not imply payment network approval or hire readiness.
  */
 export function networkLabelFor(record: CapabilityRecord): string {
   const id = record.agentProfileId;
-  if (id.includes("eip155:84532/")) return "Base Sepolia (84532)";
-  if (id.includes("eip155:8453/")) return "Base Mainnet (8453)";
-  if (id.startsWith("agent:external:")) return "External / unregistered";
+  if (id.includes("eip155:84532/")) return "Base Sepolia (registration)";
+  if (id.includes("eip155:8453/")) return "Base Mainnet (registration)";
+  if (id.startsWith("agent:external:")) return "Unknown origin";
   if (id.startsWith("agent:agenthire-operated")) return "AgentHire operated";
-  return "Network unknown";
+  return "Unknown origin";
 }
+
+/** Compact card vocabulary (Task G): category · registration · evidence. */
+export type CompactCardLabels = {
+  readonly category: string;
+  readonly registrationNetwork: string;
+  readonly evidence: string;
+};
+
+export function compactCardLabelsFor(
+  record: CapabilityRecord,
+  categoryName: string,
+): CompactCardLabels {
+  return {
+    category: categoryName || "Other",
+    registrationNetwork: networkLabelFor(record),
+    evidence: evidenceLevelFor(record),
+  };
+}
+
+export function interfaceMissingLabel(
+  value: string | null | undefined,
+): string {
+  if (value == null || value === "") return "Not inspected yet";
+  return value;
+}
+
+export const PAYMENT_NETWORK_DISCLAIMER =
+  "Registration network is where the ERC-8004 identity was observed. It is not the payment network and does not imply x402 settlement readiness." as const;
 
 export function milestoneLabel(
   milestone: DerivedVerificationView["derivedMilestone"],
