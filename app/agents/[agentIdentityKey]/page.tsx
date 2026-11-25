@@ -1,5 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import {
+  AgentCapabilitiesTabs,
+  type AgentCapabilityListItem,
+} from "../../../components/AgentCapabilitiesTabs.tsx";
 import { getCategoryDefinition } from "../../../src/marketplace/categories.ts";
 import {
   getAgentByIdentityKey,
@@ -13,6 +17,21 @@ import {
 export const dynamic = "force-dynamic";
 
 type Params = Promise<{ agentIdentityKey: string }>;
+
+function toListItem(
+  cap: NonNullable<
+    ReturnType<typeof getAgentByIdentityKey>
+  >["capabilities"][number],
+): AgentCapabilityListItem {
+  return {
+    capabilityId: cap.record.capabilityId,
+    publicTitle: cap.quality.publicTitle,
+    publicReadiness: cap.quality.publicReadiness,
+    readiness: hiringReadinessFor(cap.record),
+    description: cap.record.description?.trim() || "",
+    incomplete: cap.quality.incomplete,
+  };
+}
 
 export default async function AgentProfilePage({
   params,
@@ -35,6 +54,14 @@ export default async function AgentProfilePage({
     (c) =>
       c.quality.publicReadiness === "Documented" ||
       c.quality.publicReadiness === "Endpoint observed",
+  );
+
+  const curatedItems = curated.map(toListItem);
+  const hireReady = curatedItems.filter(
+    (c) => c.readiness === "Offline demo available",
+  );
+  const notHireReady = curatedItems.filter(
+    (c) => c.readiness !== "Offline demo available",
   );
 
   return (
@@ -113,8 +140,8 @@ export default async function AgentProfilePage({
       <section className="panel" style={{ marginTop: "1rem" }}>
         <h2>Capabilities</h2>
         <p>
-          Curated listings first. Incomplete advertised claims remain available
-          below — they are not deleted and are not hire-ready.
+          Curated capabilities, grouped by whether an offline hire demo path
+          exists. Incomplete advertised claims remain under Technical details.
         </p>
         {curated.length === 0 ? (
           <div className="empty" role="status">
@@ -122,28 +149,10 @@ export default async function AgentProfilePage({
             below or switch Discover listing scope to All advertised.
           </div>
         ) : (
-          <ul className="agent-cap-list">
-            {curated.map((cap) => {
-              const readiness = hiringReadinessFor(cap.record);
-              return (
-                <li key={cap.record.capabilityId}>
-                  <Link
-                    href={`/capabilities/${encodeURIComponent(cap.record.capabilityId)}`}
-                  >
-                    <strong>{cap.quality.publicTitle}</strong>
-                  </Link>
-                  <span className="mono">
-                    {" "}
-                    · {cap.quality.publicReadiness} · {readiness}
-                  </span>
-                  <p>
-                    {cap.record.description?.trim() ||
-                      "Description absent in local evidence."}
-                  </p>
-                </li>
-              );
-            })}
-          </ul>
+          <AgentCapabilitiesTabs
+            hireReady={hireReady}
+            notHireReady={notHireReady}
+          />
         )}
       </section>
 
@@ -154,6 +163,10 @@ export default async function AgentProfilePage({
           <dd>{documented.length}</dd>
           <dt>Offline demo suitable</dt>
           <dd>{agent.hasOfflineDemo ? "Yes — SEC Identity simulation" : "No"}</dd>
+          <dt>Hire-ready (offline demo)</dt>
+          <dd>{hireReady.length}</dd>
+          <dt>Not hire-ready (curated)</dt>
+          <dd>{notHireReady.length}</dd>
           <dt>Payment verified</dt>
           <dd>0 (none in offline catalog)</dd>
           <dt>Executed and verified</dt>

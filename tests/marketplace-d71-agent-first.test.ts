@@ -211,3 +211,23 @@ describe("D7.1 search v2", () => {
     expect(parsed.page).toBe(2);
   });
 });
+
+describe("D7.1 agent capability readiness tabs", () => {
+  it("exposes hire-ready vs not-hire-ready tabs on agent profile", () => {
+    const { readFileSync } = require("node:fs") as typeof import("node:fs");
+    const { join } = require("node:path") as typeof import("node:path");
+    const page = readFileSync(
+      join(process.cwd(), "app/agents/[agentIdentityKey]/page.tsx"),
+      "utf8",
+    );
+    const tabs = readFileSync(
+      join(process.cwd(), "components/AgentCapabilitiesTabs.tsx"),
+      "utf8",
+    );
+    expect(page).toMatch(/AgentCapabilitiesTabs/);
+    expect(tabs).toMatch(/Hire-ready/);
+    expect(tabs).toMatch(/Not hire-ready/);
+    expect(tabs).toMatch(/role="tablist"/);
+    expect(tabs).toMatch(/offline demo/i);
+  });
+});

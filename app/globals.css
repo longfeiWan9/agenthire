@@ -349,6 +349,57 @@ button[aria-disabled="true"] {
   font-size: 0.9rem;
 }
 
+.cap-tabs {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 0.75rem;
+}
+
+.cap-tablist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.cap-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink-soft);
+  border-radius: 10px;
+  padding: 0.55rem 0.9rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.cap-tab:hover {
+  background: var(--mist);
+  transform: none;
+}
+
+.cap-tab.active {
+  border-color: var(--teal);
+  background: color-mix(in srgb, var(--sand) 65%, #fff);
+  color: var(--teal-deep);
+}
+
+.cap-tab-count {
+  display: inline-flex;
+  min-width: 1.4rem;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.05rem 0.4rem;
+  background: var(--mist);
+  font-size: 0.8rem;
+  font-family: var(--font-mono);
+}
+
+.cap-tab.active .cap-tab-count {
+  background: #fff;
+}
+
 .hire-steps {
   list-style: none;
   display: flex;
