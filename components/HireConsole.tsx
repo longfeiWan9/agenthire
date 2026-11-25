@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import type { HireJobFixtureKind } from "../src/jobs/types.ts";
 import type { HireSessionSnapshot } from "../src/ui/hire-session.ts";
 import { SIMULATION_RESULT_BANNER } from "../src/ui/trust-labels.ts";
@@ -25,6 +25,22 @@ const FIXTURES: readonly HireJobFixtureKind[] = [
   "compatible-payment-unapproved-402",
 ];
 
+const STEPS = [
+  "Understand",
+  "Enter inputs",
+  "Review quote",
+  "Approve / reject",
+  "Simulated result",
+] as const;
+
+function activeStep(session: HireSessionSnapshot): number {
+  if (session.fixtureResult) return 4;
+  if (session.session) return 3;
+  if (session.liveQuote || session.syntheticQuoteRevealed) return 2;
+  if (session.job || session.input) return 1;
+  return 0;
+}
+
 export function HireConsole(props: {
   readonly capabilityId: string;
   readonly initial: HireSessionSnapshot;
@@ -35,6 +51,7 @@ export function HireConsole(props: {
   const [value, setValue] = useState("AAPL");
   const [fixture, setFixture] = useState<HireJobFixtureKind>("success-aapl");
   const [pending, startTransition] = useTransition();
+  const step = useMemo(() => activeStep(session), [session]);
 
   function run(action: () => Promise<HireSessionSnapshot | null>) {
     startTransition(async () => {
@@ -46,13 +63,14 @@ export function HireConsole(props: {
   if (!session.supported) {
     return (
       <section className="panel" aria-labelledby="hire-console-heading">
-        <h2 id="hire-console-heading">Hire console</h2>
+        <h2 id="hire-console-heading">Guided hire unavailable</h2>
         <div className="callout danger" role="status">
           {session.blockReason}
         </div>
         <p>
           This capability is discoverable in the local catalog, but live hiring
-          and offline simulation are not available here. No generic executor.
+          and offline simulation are not available here. No input schema is
+          invented when adapters are absent. No generic executor.
         </p>
       </section>
     );
@@ -65,77 +83,135 @@ export function HireConsole(props: {
       aria-busy={pending}
     >
       <h2 id="hire-console-heading">
-        Offline hire console — {props.displayName}
+        Guided offline hire — {props.displayName}
       </h2>
       <p className="mono">capabilityId={props.capabilityId}</p>
+
+      <ol className="hire-steps" aria-label="Hire progress">
+        {STEPS.map((label, index) => (
+          <li
+            key={label}
+            className={
+              index === step ? "active" : index < step ? "done" : undefined
+            }
+            aria-current={index === step ? "step" : undefined}
+          >
+            <span className="hire-step-index">{index + 1}</span>
+            {label}
+          </li>
+        ))}
+      </ol>
+
       <div className="callout" role="note">
         Live quote unavailable. Interface undocumented. Payment unavailable /
         unverified. Simulation only — QuantJourney did not return these results.
       </div>
 
-      <div className="hire-form">
-        <label htmlFor="hire-kind">
-          Input kind
-          <select
-            id="hire-kind"
-            value={kind}
-            onChange={(e) =>
-              setKind(e.target.value === "companyName" ? "companyName" : "ticker")
-            }
-          >
-            <option value="ticker">ticker</option>
-            <option value="companyName">companyName</option>
-          </select>
-        </label>
-        <label htmlFor="hire-value">
-          {kind === "ticker" ? "Ticker" : "Company name"}
-          <input
-            id="hire-value"
-            type="text"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            autoComplete="off"
-          />
-        </label>
-        <div className="hire-actions">
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() =>
-              run(() => actionConfigureHire(props.capabilityId, kind, value))
-            }
-          >
-            Validate input
-          </button>
-          <button
-            type="button"
-            disabled={pending || !session.input}
-            aria-disabled={pending || !session.input}
-            title={
-              session.input
-                ? "Create offline HireJob"
-                : "Validate ticker or companyName first"
-            }
-            onClick={() => run(() => actionCreateHireJob(props.capabilityId))}
-          >
-            Create HireJob
-          </button>
-        </div>
-        {session.validationError ? (
-          <div className="callout danger" role="alert">
-            {session.validationError}
-          </div>
-        ) : null}
-        {session.input ? (
-          <p className="mono">
-            configured: {JSON.stringify(session.input)}
+      <section
+        className="hire-step-panel"
+        aria-labelledby="hire-step-1"
+        data-testid="hire-task-guidance"
+      >
+        <h3 id="hire-step-1">1. Understand this capability</h3>
+        <p>
+          <strong>Task:</strong> resolve a US public-company identity offline
+          (SEC-style demo). The adapter validates a ticker or company name
+          locally, creates a HireJob, and can run named offline fixtures.
+          Nothing is signed or paid.
+        </p>
+        <dl>
+          <dt>Expected result</dt>
+          <dd>
+            A simulated company identity payload labeled as not returned by an
+            external provider.
+          </dd>
+          <dt>Required inputs</dt>
+          <dd>
+            Exactly one of <span className="mono">ticker</span> or{" "}
+            <span className="mono">companyName</span>. Empty values and URLs are
+            rejected.
+          </dd>
+          <dt>Safe examples</dt>
+          <dd>
+            <span className="mono">AAPL</span>,{" "}
+            <span className="mono">MSFT</span>,{" "}
+            <span className="mono">Apple Inc.</span>
+          </dd>
+        </dl>
+      </section>
+
+      <section className="hire-step-panel" aria-labelledby="hire-step-2">
+        <h3 id="hire-step-2">2. Enter inputs</h3>
+        <div className="hire-form">
+          <label htmlFor="hire-kind">
+            Input kind
+            <select
+              id="hire-kind"
+              value={kind}
+              onChange={(e) =>
+                setKind(
+                  e.target.value === "companyName" ? "companyName" : "ticker",
+                )
+              }
+            >
+              <option value="ticker">ticker</option>
+              <option value="companyName">companyName</option>
+            </select>
+          </label>
+          <label htmlFor="hire-value">
+            {kind === "ticker" ? "Ticker symbol" : "Company name"}
+            <input
+              id="hire-value"
+              type="text"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              autoComplete="off"
+              placeholder={kind === "ticker" ? "AAPL" : "Apple Inc."}
+              aria-describedby="hire-value-hint"
+            />
+          </label>
+          <p id="hire-value-hint" className="mono">
+            Local validation only — URLs and empty values are rejected. Changing
+            input after approval clears prior approval state.
           </p>
-        ) : null}
-      </div>
+          <div className="hire-actions">
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() =>
+                run(() => actionConfigureHire(props.capabilityId, kind, value))
+              }
+            >
+              Validate input
+            </button>
+            <button
+              type="button"
+              disabled={pending || !session.input}
+              aria-disabled={pending || !session.input}
+              title={
+                session.input
+                  ? "Create offline HireJob"
+                  : "Validate ticker or companyName first"
+              }
+              onClick={() => run(() => actionCreateHireJob(props.capabilityId))}
+            >
+              Create HireJob
+            </button>
+          </div>
+          {session.validationError ? (
+            <div className="callout danger" role="alert">
+              {session.validationError}
+            </div>
+          ) : null}
+          {session.input ? (
+            <p className="mono">configured: {JSON.stringify(session.input)}</p>
+          ) : null}
+        </div>
+      </section>
 
       {session.job ? (
-        <div style={{ marginTop: "1rem" }}>
-          <h3>HireJob</h3>
+        <section className="hire-step-panel" aria-labelledby="hire-step-job">
+          <h3 id="hire-step-job">HireJob</h3>
           <dl>
             <dt>hireJobId</dt>
             <dd>{session.job.hireJobId}</dd>
@@ -150,26 +226,21 @@ export function HireConsole(props: {
             <dt>approvedForNetworkExecution</dt>
             <dd>{String(session.job.flags.approvedForNetworkExecution)}</dd>
           </dl>
-        </div>
+        </section>
       ) : null}
 
-      {session.liveQuote ? (
-        <div style={{ marginTop: "1rem" }}>
-          <h3>Live quote status</h3>
+      <section className="hire-step-panel" aria-labelledby="hire-step-3">
+        <h3 id="hire-step-3">3. Review quote</h3>
+        {session.liveQuote ? (
           <div className="callout danger" role="status">
             Live quote unavailable —{" "}
             {session.liveQuote.notes[0] ?? "unknown interface"}
           </div>
+        ) : (
           <p className="mono">
-            status={session.liveQuote.status}; paymentReady=
-            {String(session.liveQuote.paymentReady)}; amount.unknown=
-            {String(session.liveQuote.amount.unknown)}
+            Live quote stays unavailable for this capability.
           </p>
-        </div>
-      ) : null}
-
-      <div style={{ marginTop: "1rem" }}>
-        <h3>Synthetic quote &amp; approval (labeled)</h3>
+        )}
         <div className="hire-actions">
           <button
             type="button"
@@ -182,6 +253,20 @@ export function HireConsole(props: {
           >
             Reveal synthetic quote
           </button>
+        </div>
+        {session.syntheticQuoteRevealed && session.syntheticQuote ? (
+          <p className="mono">
+            SYNTHETIC quote status={session.syntheticQuote.status}; amount=
+            {session.syntheticQuote.amount.displayUsdc ?? "unknown"};
+            paymentReady={String(session.syntheticQuote.paymentReady)};
+            provenance={session.syntheticQuote.provenance}
+          </p>
+        ) : null}
+      </section>
+
+      <section className="hire-step-panel" aria-labelledby="hire-step-4">
+        <h3 id="hire-step-4">4. Approve / reject (simulation)</h3>
+        <div className="hire-actions">
           <button
             type="button"
             disabled={pending || !session.session}
@@ -204,7 +289,9 @@ export function HireConsole(props: {
             className="secondary"
             disabled={pending || !session.session}
             aria-disabled={pending || !session.session}
-            onClick={() => run(() => actionModifiedBinding(props.capabilityId))}
+            onClick={() =>
+              run(() => actionModifiedBinding(props.capabilityId))
+            }
           >
             Try modified fingerprint
           </button>
@@ -213,19 +300,13 @@ export function HireConsole(props: {
             className="secondary"
             disabled={pending || !session.session}
             aria-disabled={pending || !session.session}
-            onClick={() => run(() => actionRevokeApproval(props.capabilityId))}
+            onClick={() =>
+              run(() => actionRevokeApproval(props.capabilityId))
+            }
           >
             Revoke approval
           </button>
         </div>
-        {session.syntheticQuoteRevealed && session.syntheticQuote ? (
-          <p className="mono">
-            SYNTHETIC quote status={session.syntheticQuote.status}; amount=
-            {session.syntheticQuote.amount.displayUsdc ?? "unknown"};
-            paymentReady={String(session.syntheticQuote.paymentReady)};
-            provenance={session.syntheticQuote.provenance}
-          </p>
-        ) : null}
         {session.session ? (
           <p className="mono">
             approval.state={session.session.state};
@@ -234,8 +315,12 @@ export function HireConsole(props: {
             paymentExecutionAuthorization=
             {String(session.session.flags.paymentExecutionAuthorization)}
           </p>
-        ) : null}
-      </div>
+        ) : (
+          <p className="mono">
+            Reveal a synthetic quote first to practice approval states.
+          </p>
+        )}
+      </section>
 
       {session.actionFeedback ? (
         <div
@@ -253,15 +338,17 @@ export function HireConsole(props: {
         </div>
       ) : null}
 
-      <div style={{ marginTop: "1rem" }}>
-        <h3>Run named offline fixture</h3>
+      <section className="hire-step-panel" aria-labelledby="hire-step-5">
+        <h3 id="hire-step-5">5. View simulated result</h3>
         <div className="hire-actions">
           <label htmlFor="hire-fixture">
             Fixture kind
             <select
               id="hire-fixture"
               value={fixture}
-              onChange={(e) => setFixture(e.target.value as HireJobFixtureKind)}
+              onChange={(e) =>
+                setFixture(e.target.value as HireJobFixtureKind)
+              }
             >
               {FIXTURES.map((f) => (
                 <option key={f} value={f}>
@@ -280,7 +367,7 @@ export function HireConsole(props: {
             Run fixture
           </button>
         </div>
-      </div>
+      </section>
 
       {session.banner || session.fixtureResult ? (
         <div className="sim-banner" role="alert">
@@ -306,7 +393,10 @@ export function HireConsole(props: {
       ) : null}
 
       {session.notes.length > 0 ? (
-        <details style={{ marginTop: "1rem" }} open={Boolean(session.actionFeedback)}>
+        <details
+          style={{ marginTop: "1rem" }}
+          open={Boolean(session.actionFeedback)}
+        >
           <summary>Session notes</summary>
           <ul>
             {session.notes.map((n, i) => (

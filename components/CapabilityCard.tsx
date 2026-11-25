@@ -1,44 +1,53 @@
 import Link from "next/link";
 import type { CapabilityRecord } from "../src/marketplace/types.ts";
 import { getCategoryDefinition } from "../src/marketplace/categories.ts";
+import { assessListingQuality } from "../src/marketplace/listing-policy.ts";
 import {
-  evidenceLevelFor,
+  compactCardLabelsFor,
   hiringReadinessFor,
-  paymentLabelFor,
 } from "../src/ui/trust-labels.ts";
 
-export function CapabilityCard({ record }: { readonly record: CapabilityRecord }) {
-  const evidence = evidenceLevelFor(record);
-  const readiness = hiringReadinessFor(record);
-  const payment = paymentLabelFor(record);
-  const categories = record.categories
+export function CapabilityCard({
+  record,
+  matchExplanation,
+}: {
+  readonly record: CapabilityRecord;
+  readonly matchExplanation?: string;
+}) {
+  const quality = assessListingQuality(record);
+  const categoryName = record.categories
     .map((id) => getCategoryDefinition(id).name)
     .join(", ");
+  const labels = compactCardLabelsFor(record, categoryName || "Other");
+  const readiness = hiringReadinessFor(record);
 
   return (
     <Link
       href={`/capabilities/${encodeURIComponent(record.capabilityId)}`}
       className="capability-card"
     >
-      <h3>{record.displayName}</h3>
+      <h3>{quality.publicTitle}</h3>
       <p>
         {record.description?.trim() ||
           "No description in local evidence — advertised capability only."}
       </p>
-      <div className="meta-tags">
-        <span className="tag">{record.agentDisplayName ?? record.providerKey}</span>
-        <span className="tag">{categories || "Other"}</span>
-        <span className="tag">{record.protocols.join(", ") || "unknown"}</span>
-        <span className="tag">{evidence}</span>
-        <span
-          className={
-            readiness === "Offline demo available" ? "tag ok" : "tag warn"
-          }
-        >
-          {readiness}
-        </span>
-        <span className="tag danger">{payment}</span>
+      {matchExplanation ? (
+        <p className="match-explain">{matchExplanation}</p>
+      ) : null}
+      <div className="meta-tags" aria-label="Capability labels">
+        <span className="tag">{labels.category}</span>
+        <span className="tag">{labels.registrationNetwork}</span>
+        <span className="tag">{labels.evidence}</span>
+        {readiness === "Offline demo available" ? (
+          <span className="tag ok">{readiness}</span>
+        ) : null}
+        {!quality.qualifiesCurated ? (
+          <span className="tag warn">Incomplete listing</span>
+        ) : null}
       </div>
+      <p className="mono">
+        Agent: {record.agentDisplayName ?? record.providerKey}
+      </p>
     </Link>
   );
 }

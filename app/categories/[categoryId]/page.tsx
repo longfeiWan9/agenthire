@@ -1,16 +1,24 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CapabilityCard } from "../../../components/CapabilityCard.tsx";
-import { Pagination } from "../../../components/Pagination.tsx";
+import { AgentCard } from "../../../components/AgentCard.tsx";
+import { DiscoverFilters } from "../../../components/DiscoverFilters.tsx";
 import {
+  buildFilterHref,
+  categoryAgentSummary,
   getCategoryDefinition,
-  listCategoryPage,
   parseCategoryParam,
+  parseDiscoverParams,
 } from "../../../src/ui/catalog-store.ts";
 
 export const dynamic = "force-dynamic";
 
 type Params = Promise<{ categoryId: string }>;
-type SearchParams = Promise<{ page?: string }>;
+type SearchParams = Promise<{
+  network?: string;
+  listing?: string;
+  q?: string;
+  page?: string;
+}>;
 
 export default async function CategoryDetailPage({
   params,
@@ -25,12 +33,29 @@ export default async function CategoryDetailPage({
     notFound();
   }
   const categoryId = parsed;
-
   const sp = await searchParams;
-  const pageRaw = Number.parseInt(sp.page ?? "1", 10);
-  const page = Number.isFinite(pageRaw) && pageRaw > 0 ? pageRaw : 1;
+  const filters = parseDiscoverParams({ ...sp, category: categoryId });
   const def = getCategoryDefinition(categoryId);
-  const paged = listCategoryPage(categoryId, page, 24);
+  const summary = categoryAgentSummary(categoryId, {
+    network: filters.network,
+    listing: filters.listing,
+  });
+
+  // Optional text filter across agents already in category.
+  const q = filters.q.toLowerCase();
+  const agents = q
+    ? summary.agents.filter((a) => {
+        const hay = [
+          a.displayName,
+          a.agentIdentityKey,
+          ...a.capabilities.map((c) => c.quality.publicTitle),
+          ...a.capabilities.map((c) => c.record.description ?? ""),
+        ]
+          .join(" ")
+          .toLowerCase();
+        return hay.includes(q);
+      })
+    : summary.agents;
 
   return (
     <>
@@ -38,33 +63,53 @@ export default async function CategoryDetailPage({
         <p className="hero-brand">AgentHire</p>
         <h1>{def.name}</h1>
         <p className="lede">{def.description}</p>
+        <div className="facts-row">
+          <span className="chip">{agents.length} agents in view</span>
+          <span className="chip">
+            {summary.curatedCapabilityCount} curated capabilities
+          </span>
+          <span className="chip">
+            {summary.totalCapabilityCount} advertised in category
+          </span>
+        </div>
       </section>
+
+      <DiscoverFilters
+        q={filters.q}
+        category={categoryId}
+        network={filters.network}
+        listing={filters.listing}
+        action={`/categories/${encodeURIComponent(categoryId)}`}
+        prompt={`Find agents in ${def.name}`}
+      />
+
       <div className="results-meta">
         <span>
-          {paged.result.total} capabilities · page {paged.page}/
-          {paged.totalPages}
+          Agent-first category listing · registration filters apply
         </span>
+        <Link href="/categories">← All categories</Link>
       </div>
-      {paged.pageHits.length === 0 ? (
+
+      {agents.length === 0 ? (
         <div className="empty" role="status">
-          No capabilities in this category.
+          No agents with listings in this category for the selected scope. Try{" "}
+          <a
+            href={buildFilterHref(`/categories/${encodeURIComponent(categoryId)}`, {
+              listing: "all",
+              network: filters.network,
+            })}
+          >
+            All advertised
+          </a>
+          .
         </div>
       ) : (
-        <div className="card-list">
-          {paged.pageHits.map((hit) => (
-            <CapabilityCard key={hit.capabilityId} record={hit.record} />
+        <div className="agent-list">
+          {agents.map((agent) => (
+            <AgentCard key={agent.agentIdentityKey} agent={agent} />
           ))}
         </div>
       )}
-      <Pagination
-        page={paged.page}
-        totalPages={paged.totalPages}
-        hrefForPage={(p) =>
-          p > 1
-            ? `/categories/${encodeURIComponent(categoryId)}?page=${p}`
-            : `/categories/${encodeURIComponent(categoryId)}`
-        }
-      />
     </>
   );
 }

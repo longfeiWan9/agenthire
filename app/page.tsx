@@ -1,17 +1,21 @@
-import { CapabilityCard } from "../components/CapabilityCard.tsx";
+import { AgentCard } from "../components/AgentCard.tsx";
+import { DiscoverFilters } from "../components/DiscoverFilters.tsx";
 import { Pagination } from "../components/Pagination.tsx";
-import { SearchForm } from "../components/SearchForm.tsx";
 import {
+  buildFilterHref,
   catalogFacts,
-  parseSearchParams,
-  searchCatalogPage,
+  discoverAgentsPage,
+  parseDiscoverParams,
 } from "../src/ui/catalog-store.ts";
+import { PAYMENT_NETWORK_DISCLAIMER } from "../src/ui/trust-labels.ts";
 
 export const dynamic = "force-dynamic";
 
 type SearchParams = Promise<{
   q?: string;
   category?: string;
+  network?: string;
+  listing?: string;
   page?: string;
 }>;
 
@@ -21,19 +25,22 @@ export default async function HomePage({
   readonly searchParams: SearchParams;
 }) {
   const sp = await searchParams;
-  const { query, page, q } = parseSearchParams(sp);
+  const params = parseDiscoverParams(sp);
   const facts = catalogFacts();
-  const paged = searchCatalogPage(query, page, 24);
-  const category = typeof query.category === "string" ? query.category : "";
+  const paged = discoverAgentsPage(params, 12);
 
-  const hrefForPage = (p: number) => {
-    const params = new URLSearchParams();
-    if (q) params.set("q", q);
-    if (category) params.set("category", category);
-    if (p > 1) params.set("page", String(p));
-    const qs = params.toString();
-    return qs ? `/?${qs}` : "/";
-  };
+  const hrefForPage = (p: number) =>
+    buildFilterHref("/", {
+      q: params.q,
+      category: params.category ?? undefined,
+      network: params.network,
+      listing: params.listing,
+      page: p,
+    });
+
+  const matchByAgent = new Map(
+    paged.search.agentHits.map((h) => [h.agentProfileId, h.matchExplanation]),
+  );
 
   return (
     <>
@@ -41,56 +48,83 @@ export default async function HomePage({
         <p className="hero-brand">AgentHire</p>
         <h1>Discover. Hire. Pay AI Agents.</h1>
         <p className="lede">
-          Explore {facts.capabilityCount} advertised capabilities across{" "}
-          {facts.agentProfileCount} agent profiles from local evidence. Hiring
-          stays offline-demo only — not verified live execution.
+          Task-first discovery over {facts.agentProfileCount} agent profiles and{" "}
+          {facts.capabilityCount} advertised capabilities from local evidence.
+          Default view shows curated services — not {facts.capabilityCount}{" "}
+          hire-ready agents.
         </p>
         <div className="facts-row" aria-label="Catalog facts">
-          <span className="chip">{facts.capabilityCount} capabilities</span>
           <span className="chip">{facts.agentProfileCount} agent profiles</span>
+          <span className="chip">
+            {facts.curatedCapabilityCount} curated capabilities
+          </span>
+          <span className="chip">
+            {facts.capabilityCount} advertised (exploratory)
+          </span>
           <span className="chip">
             {facts.erc8004IdentityCount} ERC-8004 identities
           </span>
-          <span className="chip">4 curated categories + Other</span>
         </div>
       </section>
 
-      <SearchForm q={q} category={category || ""} />
+      <DiscoverFilters
+        q={params.q}
+        category={params.category ?? ""}
+        network={params.network}
+        listing={params.listing}
+      />
 
-      <div className="category-grid" aria-label="Categories">
-        <a className="category-link" href="/">
-          <strong>All</strong>
-          <span>{facts.capabilityCount} capabilities</span>
-        </a>
-        {facts.summary.categories.map((c) => (
-          <a
-            key={c.categoryId}
-            className="category-link"
-            href={`/?category=${encodeURIComponent(c.categoryId)}`}
-          >
-            <strong>{c.name}</strong>
-            <span>{c.capabilityCount} capabilities</span>
-          </a>
-        ))}
-      </div>
+      <p className="mono filter-note" role="note">
+        {PAYMENT_NETWORK_DISCLAIMER}
+      </p>
 
       <div className="results-meta">
         <span>
-          {paged.result.total === 0
-            ? "No capabilities matched"
-            : `Showing ${paged.pageHits.length} of ${paged.result.total} · page ${paged.page}/${paged.totalPages}`}
+          {paged.agents.length === 0
+            ? "No agents matched"
+            : `Showing ${paged.pageAgents.length} of ${paged.agents.length} agents · page ${paged.page}/${paged.totalPages}`}
         </span>
-        <span className="mono">Search ranks discoverability, not readiness</span>
+        <span className="mono">
+          {params.q
+            ? paged.search.lowConfidence
+              ? "Low-confidence deterministic match"
+              : "Search ranks discoverability, not readiness"
+            : "Browse curated agents by registration network"}
+        </span>
       </div>
 
-      {paged.pageHits.length === 0 ? (
+      {paged.pageAgents.length === 0 ? (
         <div className="empty" role="status">
-          No results for this query. Try another keyword or browse categories.
+          <p>
+            No agents matched this task and filter combination. Try another
+            phrase, switch listing scope to{" "}
+            <a
+              href={buildFilterHref("/", {
+                q: params.q,
+                category: params.category ?? undefined,
+                network: params.network,
+                listing: "all",
+                page: 1,
+              })}
+            >
+              All advertised
+            </a>
+            , or browse{" "}
+            <a href="/categories">Categories</a>.
+          </p>
+          <p className="mono">
+            Example queries: Validate JSON · Find company SEC identity · Analyze
+            wallet activity · Research an organization
+          </p>
         </div>
       ) : (
-        <div className="card-list">
-          {paged.pageHits.map((hit) => (
-            <CapabilityCard key={hit.capabilityId} record={hit.record} />
+        <div className="agent-list">
+          {paged.pageAgents.map((agent) => (
+            <AgentCard
+              key={agent.agentIdentityKey}
+              agent={agent}
+              matchExplanation={matchByAgent.get(agent.agentIdentityKey)}
+            />
           ))}
         </div>
       )}

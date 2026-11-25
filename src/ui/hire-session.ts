@@ -139,21 +139,29 @@ export function configureHireInput(
   const validated = validateSecCompanyIdentityInput(raw);
   if (!validated.ok) {
     const msg = `${validated.code}: ${validated.message}`;
+    const cleared = emptySnapshot(capabilityId);
     return save({
-      ...emptySnapshot(capabilityId),
+      ...cleared,
       input: null,
       validationError: msg,
       actionFeedback: msg,
-      notes: [...base.notes, "input validation failed locally"],
+      notes: [...cleared.notes, "input validation failed locally"],
     });
   }
 
+  // Full reset: changing input must drop job/quote/approval and not keep
+  // stale note lines like approval.state=simulationApproved.
+  const cleared = emptySnapshot(capabilityId);
   return save({
-    ...emptySnapshot(capabilityId),
+    ...cleared,
     input: validated.value,
     validationError: null,
     actionFeedback: `Input accepted (${kind}) — Create HireJob enabled`,
-    notes: [...base.notes, `configured kind=${kind}`],
+    notes: [
+      ...cleared.notes,
+      `configured kind=${kind}`,
+      "Prior HireJob / quote / approval state cleared after input change",
+    ],
   });
 }
 

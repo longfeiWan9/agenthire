@@ -20,7 +20,7 @@ export default function RootLayout({
         <SiteHeader />
         <main id="main-content">{children}</main>
         <footer className="site-footer">
-          AgentHire D6.1 · STRICTLY_OFFLINE · local catalog evidence only · not
+          AgentHire D7.1 · STRICTLY_OFFLINE · local catalog evidence only · not
           690 verified agents · not ready to hire
         </footer>
       </body>
