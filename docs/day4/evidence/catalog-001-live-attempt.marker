@@ -1,9 +1,0 @@
-{
-  "schemaVersion": "1.0",
-  "requestId": "CATALOG-001",
-  "approvedUrl": "https://agent402.tools/.well-known/x402",
-  "method": "GET",
-  "writtenAt": "2026-11-20T09:05:44.412Z",
-  "purpose": "single-use-live-attempt-guard",
-  "note": "Written before network I/O. Presence blocks any further --approved-live run. No CLI force-reset. Manual marker removal is out of band and not provided."
-}

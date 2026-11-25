@@ -27,3 +27,6 @@ Thumbs.db
 .vscode/
 *.log
 .pnpm-store/
+
+# Local project docs / evidence (keep on disk; do not push)
+docs/
