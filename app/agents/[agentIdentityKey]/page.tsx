@@ -140,14 +140,6 @@ export default async function AgentProfilePage({
                     {cap.record.description?.trim() ||
                       "Description absent in local evidence."}
                   </p>
-                  {readiness === "Offline demo available" ? (
-                    <Link
-                      className="btn"
-                      href={`/hire/${encodeURIComponent(cap.record.capabilityId)}`}
-                    >
-                      Guided offline hire
-                    </Link>
-                  ) : null}
                 </li>
               );
             })}
