@@ -1,0 +1,177 @@
+[
+  {
+    "id": "po1-discover",
+    "h1": "Discover. Hire. Pay AI Agents.",
+    "categoryLinks": [
+      "All690 capabilities",
+      "Research & Intelligence59 capabilities",
+      "Data & Analytics64 capabilities",
+      "Content & Documents41 capabilities",
+      "Developer Tools74 capabilities",
+      "Other477 capabilities"
+    ],
+    "cards": 24,
+    "search": true,
+    "skip": true,
+    "networkTags": [
+      "AgentHire (operated)",
+      "AgentHire operated",
+      "Data & Analytics",
+      "Advertised",
+      "Planning reference",
+      "Payment unverified",
+      "Agent402",
+      "Base Mainnet (8453)",
+      "Other",
+      "Discovery evidence",
+      "Live execution blocked",
+      "x402 advertised (unverified)"
+    ]
+  },
+  {
+    "id": "po1-categories",
+    "h1": "Categories",
+    "categoryLinks": [
+      "All690 capabilities",
+      "Research & Intelligence59 capabilities · 4 profiles",
+      "Data & Analytics64 capabilities · 3 profiles",
+      "Content & Documents41 capabilities · 2 profiles",
+      "Developer Tools74 capabilities · 3 profiles",
+      "Other477 capabilities · 3 profiles"
+    ],
+    "cards": 0,
+    "search": false
+  },
+  {
+    "id": "po2-search",
+    "meta": "Showing 24 of 620 · page 1/26Search ranks discoverability, not readiness",
+    "cards": 24,
+    "hasNetworkMainnet": true,
+    "placeholder": "Name, keyword, or phrase"
+  },
+  {
+    "id": "cap:00939f16e744",
+    "key": "mainnet",
+    "h1": "https://agent402.tools/v1/embeddings",
+    "chips": [
+      "Discovery evidence",
+      "Base Mainnet (8453)",
+      "Live execution blocked",
+      "x402 advertised (unverified)",
+      "Ladder L0"
+    ],
+    "unknowns": 4,
+    "hireDisabled": true,
+    "tryDemo": null,
+    "networkChip": true,
+    "bodyHasSimClaim": true
+  },
+  {
+    "id": "cap:7b2e5a7406dd",
+    "key": "sepolia",
+    "h1": "MCP (v2025-06-18)",
+    "chips": [
+      "Metadata validated",
+      "Base Sepolia (84532)",
+      "Live execution blocked",
+      "Payment unverified",
+      "Ladder L0"
+    ],
+    "unknowns": 3,
+    "hireDisabled": true,
+    "tryDemo": null,
+    "networkChip": true,
+    "bodyHasSimClaim": true
+  },
+  {
+    "id": "cap:00afcd5ae140",
+    "key": "weak",
+    "h1": "https://agent402.tools/api/mev-builder-share",
+    "chips": [
+      "Discovery evidence",
+      "Base Mainnet (8453)",
+      "Live execution blocked",
+      "x402 advertised (unverified)",
+      "Ladder L0"
+    ],
+    "unknowns": 4,
+    "hireDisabled": true,
+    "tryDemo": null,
+    "networkChip": true,
+    "bodyHasSimClaim": true
+  },
+  {
+    "id": "cap:34b6cb6beba6",
+    "key": "documented",
+    "h1": "https://agent402.tools/api/openapi-lint",
+    "chips": [
+      "Discovery evidence",
+      "Base Mainnet (8453)",
+      "Live execution blocked",
+      "x402 advertised (unverified)",
+      "Ladder L0"
+    ],
+    "unknowns": 4,
+    "hireDisabled": true,
+    "tryDemo": null,
+    "networkChip": true,
+    "bodyHasSimClaim": true
+  },
+  {
+    "id": "cap:79da211975c2",
+    "key": "sec",
+    "h1": "SEC Company Identity",
+    "chips": [
+      "Discovery evidence",
+      "External / unregistered",
+      "Offline demo available",
+      "Payment unavailable",
+      "Ladder L0"
+    ],
+    "unknowns": 8,
+    "hireDisabled": false,
+    "tryDemo": "Try offline demo",
+    "networkChip": true,
+    "bodyHasSimClaim": true
+  },
+  {
+    "id": "hire-guidance",
+    "guidance": true,
+    "guidanceText": "Task: resolve a US public-company identity offline (SEC-style demo). No provider HTTP, signing, or payment runs from this console.Enter a ticker (e.g. AAPL) or company name, then V",
+    "valueHint": "Local validation only — URLs and empty values are rejected.",
+    "createDisabled": true
+  },
+  {
+    "id": "hire-approve",
+    "feedback": "Simulation approved — executionAuthorization=false; paymentExecutionAuthorization=false",
+    "approval": true,
+    "execFalse": true,
+    "payFalse": true
+  },
+  {
+    "id": "hire-stale-invalidate",
+    "feedback": "Input accepted (ticker) — Create HireJob enabled",
+    "noApprovalState": false,
+    "configuredMsft": true
+  },
+  {
+    "id": "hire-fixture",
+    "banner": "SIMULATED RESULT — NOT RETURNED BY AN EXTERNAL PROVIDER; NO PAYMENT WAS MADE.",
+    "verifiedFalse": true
+  },
+  {
+    "id": "mobile",
+    "headerFlex": "column",
+    "brand": "AgentHire"
+  },
+  {
+    "id": "a11y",
+    "skipHref": "#main-content",
+    "mainId": "main-content",
+    "focusCss": {
+      "outline": "rgb(15, 107, 107) solid 3px",
+      "outlineWidth": "3px",
+      "boxShadow": "none"
+    }
+  }
+]

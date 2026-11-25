@@ -105,6 +105,19 @@ export function interfaceFieldLabel(
   return value;
 }
 
+/**
+ * Honest network label from agent profile id — discovery clarity only.
+ * Does not imply payment network approval or hire readiness.
+ */
+export function networkLabelFor(record: CapabilityRecord): string {
+  const id = record.agentProfileId;
+  if (id.includes("eip155:84532/")) return "Base Sepolia (84532)";
+  if (id.includes("eip155:8453/")) return "Base Mainnet (8453)";
+  if (id.startsWith("agent:external:")) return "External / unregistered";
+  if (id.startsWith("agent:agenthire-operated")) return "AgentHire operated";
+  return "Network unknown";
+}
+
 export function milestoneLabel(
   milestone: DerivedVerificationView["derivedMilestone"],
 ): string {

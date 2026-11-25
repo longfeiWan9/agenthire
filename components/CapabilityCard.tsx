@@ -4,6 +4,7 @@ import { getCategoryDefinition } from "../src/marketplace/categories.ts";
 import {
   evidenceLevelFor,
   hiringReadinessFor,
+  networkLabelFor,
   paymentLabelFor,
 } from "../src/ui/trust-labels.ts";
 
@@ -11,6 +12,7 @@ export function CapabilityCard({ record }: { readonly record: CapabilityRecord }
   const evidence = evidenceLevelFor(record);
   const readiness = hiringReadinessFor(record);
   const payment = paymentLabelFor(record);
+  const network = networkLabelFor(record);
   const categories = record.categories
     .map((id) => getCategoryDefinition(id).name)
     .join(", ");
@@ -27,8 +29,8 @@ export function CapabilityCard({ record }: { readonly record: CapabilityRecord }
       </p>
       <div className="meta-tags">
         <span className="tag">{record.agentDisplayName ?? record.providerKey}</span>
+        <span className="tag">{network}</span>
         <span className="tag">{categories || "Other"}</span>
-        <span className="tag">{record.protocols.join(", ") || "unknown"}</span>
         <span className="tag">{evidence}</span>
         <span
           className={

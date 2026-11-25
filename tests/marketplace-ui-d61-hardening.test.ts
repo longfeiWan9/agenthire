@@ -15,7 +15,11 @@ import {
   runNamedOfflineFixture,
   simulateApproveHire,
 } from "../src/ui/hire-session.ts";
-import { SIMULATION_RESULT_BANNER } from "../src/ui/trust-labels.ts";
+import {
+  networkLabelFor,
+  SIMULATION_RESULT_BANNER,
+} from "../src/ui/trust-labels.ts";
+import { getCapabilityById } from "../src/ui/catalog-store.ts";
 
 const ROOT = process.cwd();
 
@@ -71,5 +75,46 @@ describe("D6.1 UI hardening regressions", () => {
     expect(consoleSrc).toMatch(/actionFeedback/);
     expect(consoleSrc).toMatch(/aria-busy/);
     expect(consoleSrc).toMatch(/key=\{`\$\{i\}-/);
+    expect(consoleSrc).toMatch(/data-testid="hire-task-guidance"/);
+    expect(consoleSrc).toMatch(/Task:/);
+  });
+
+  it("labels Base Mainnet vs Sepolia networks without implying hire readiness", () => {
+    const mainnet = getCapabilityById("cap:00939f16e744");
+    const sepolia = getCapabilityById("cap:7b2e5a7406dd");
+    const external = getCapabilityById(SEC_IDENTITY_CAPABILITY_ID);
+    expect(mainnet).not.toBeNull();
+    expect(sepolia).not.toBeNull();
+    expect(external).not.toBeNull();
+    expect(networkLabelFor(mainnet!)).toBe("Base Mainnet (8453)");
+    expect(networkLabelFor(sepolia!)).toBe("Base Sepolia (84532)");
+    expect(networkLabelFor(external!)).toBe("External / unregistered");
+
+    const card = read("components/CapabilityCard.tsx");
+    expect(card).toMatch(/networkLabelFor/);
+    expect(card).not.toMatch(/record\.protocols\.join/);
+  });
+
+  it("reconfiguring input after simulation approve clears approval state", () => {
+    configureHireInput(SEC_IDENTITY_CAPABILITY_ID, "ticker", "AAPL");
+    createValidatedHireJob(SEC_IDENTITY_CAPABILITY_ID);
+    revealSyntheticQuote(SEC_IDENTITY_CAPABILITY_ID);
+    const approved = simulateApproveHire(SEC_IDENTITY_CAPABILITY_ID);
+    expect(approved.session?.state).toBe("simulationApproved");
+    expect(approved.session?.flags.executionAuthorization).toBe(false);
+    expect(approved.notes.some((n) => n.includes("approval.state=simulationApproved"))).toBe(
+      true,
+    );
+
+    const reset = configureHireInput(SEC_IDENTITY_CAPABILITY_ID, "ticker", "MSFT");
+    expect(reset.session).toBeNull();
+    expect(reset.job).toBeNull();
+    expect(reset.binding).toBeNull();
+    expect(reset.syntheticQuote).toBeNull();
+    expect(reset.input?.kind).toBe("ticker");
+    expect(reset.notes.some((n) => /approval\.state=simulationApproved/.test(n))).toBe(
+      false,
+    );
+    expect(reset.notes.some((n) => /Prior HireJob/.test(n))).toBe(true);
   });
 });

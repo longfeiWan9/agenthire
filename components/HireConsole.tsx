@@ -72,6 +72,29 @@ export function HireConsole(props: {
         Live quote unavailable. Interface undocumented. Payment unavailable /
         unverified. Simulation only — QuantJourney did not return these results.
       </div>
+      <div className="callout" role="note" data-testid="hire-task-guidance">
+        <strong>Task:</strong> resolve a US public-company identity offline
+        (SEC-style demo). No provider HTTP, signing, or payment runs from this
+        console.
+        <ol style={{ margin: "0.5rem 0 0", paddingLeft: "1.25rem" }}>
+          <li>
+            Enter a ticker (e.g. <span className="mono">AAPL</span>) or company
+            name, then <strong>Validate input</strong>.
+          </li>
+          <li>
+            <strong>Create HireJob</strong> — live quote stays unavailable;
+            changing input clears prior approval state.
+          </li>
+          <li>
+            Optionally reveal a labeled synthetic quote and practice simulation
+            approve / reject / modified fingerprint.
+          </li>
+          <li>
+            Run a named offline fixture — results always carry the simulation
+            banner and <span className="mono">providerExecutionVerified=false</span>.
+          </li>
+        </ol>
+      </div>
 
       <div className="hire-form">
         <label htmlFor="hire-kind">
@@ -88,15 +111,20 @@ export function HireConsole(props: {
           </select>
         </label>
         <label htmlFor="hire-value">
-          {kind === "ticker" ? "Ticker" : "Company name"}
+          {kind === "ticker" ? "Ticker symbol" : "Company name"}
           <input
             id="hire-value"
             type="text"
             value={value}
             onChange={(e) => setValue(e.target.value)}
             autoComplete="off"
+            placeholder={kind === "ticker" ? "AAPL" : "Apple Inc."}
+            aria-describedby="hire-value-hint"
           />
         </label>
+        <p id="hire-value-hint" className="mono">
+          Local validation only — URLs and empty values are rejected.
+        </p>
         <div className="hire-actions">
           <button
             type="button"

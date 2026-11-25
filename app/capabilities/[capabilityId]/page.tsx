@@ -13,6 +13,7 @@ import {
   interfaceFieldLabel,
   ladderLevelFor,
   ladderNotes,
+  networkLabelFor,
   paymentLabelFor,
 } from "../../../src/ui/trust-labels.ts";
 
@@ -40,6 +41,7 @@ export default async function CapabilityDetailPage({
   const evidence = evidenceLevelFor(record);
   const readiness = hiringReadinessFor(record);
   const payment = paymentLabelFor(record);
+  const network = networkLabelFor(record);
   const ladder = ladderLevelFor(record);
   const isSec = record.capabilityId === SEC_IDENTITY_CAPABILITY_ID;
 
@@ -54,6 +56,7 @@ export default async function CapabilityDetailPage({
         </p>
         <div className="facts-row">
           <span className="chip">{evidence}</span>
+          <span className="chip">{network}</span>
           <span className="chip">{readiness}</span>
           <span className="chip">{payment}</span>
           <span className="chip">Ladder {ladder}</span>
@@ -64,23 +67,25 @@ export default async function CapabilityDetailPage({
         <section className="panel">
           <h2>Overview</h2>
           <dl>
-            <dt>capabilityId</dt>
+            <dt>Capability ID</dt>
             <dd>{record.capabilityId}</dd>
-            <dt>provider</dt>
+            <dt>Agent / provider</dt>
             <dd>{record.agentDisplayName ?? record.providerKey}</dd>
-            <dt>serviceKey</dt>
+            <dt>Network</dt>
+            <dd>{network}</dd>
+            <dt>Catalog service key</dt>
             <dd>{record.serviceKey}</dd>
-            <dt>sourceKind</dt>
+            <dt>Evidence source</dt>
             <dd>{record.sourceKind}</dd>
-            <dt>protocols</dt>
+            <dt>Protocols</dt>
             <dd>{record.protocols.join(", ") || "unknown"}</dd>
-            <dt>categories</dt>
+            <dt>Categories</dt>
             <dd>
               {record.categories
                 .map((id) => getCategoryDefinition(id).name)
                 .join(", ")}
             </dd>
-            <dt>verification milestone</dt>
+            <dt>Verification milestone</dt>
             <dd>{record.verification.derivedMilestone}</dd>
           </dl>
           <div className="callout" role="note">
