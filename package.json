@@ -31,7 +31,8 @@
     "observe:agent402-jsonvalidate": "tsx src/scripts/observe-agent402-jsonvalidate.ts",
     "build:marketplace": "tsx src/scripts/build-marketplace-catalog.ts",
     "demo:hirejob:offline": "tsx src/scripts/demo-hirejob-offline.ts",
-    "demo:hirejob:quote:offline": "tsx src/scripts/demo-hirejob-quote-offline.ts"
+    "demo:hirejob:quote:offline": "tsx src/scripts/demo-hirejob-quote-offline.ts",
+    "demo:payment:local": "tsx src/scripts/demo-payment-local.ts"
   },
   "dependencies": {
     "next": "15.5.7",
