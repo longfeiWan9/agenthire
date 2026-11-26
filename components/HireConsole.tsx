@@ -2,6 +2,15 @@
 
 import { useMemo, useState, useTransition } from "react";
 import type { HireJobFixtureKind } from "../src/jobs/types.ts";
+import {
+  buildAgent402PowDisplayView,
+  formatPowDisplayStatus,
+} from "../src/marketplace/d73-display-adapter.ts";
+import {
+  assessEvidenceLadder,
+  type EvidenceLadderView,
+} from "../src/marketplace/evidence-ladder.ts";
+import type { ServiceCapability } from "../src/marketplace/types.ts";
 import type { HireSessionSnapshot } from "../src/ui/hire-session.ts";
 import { SIMULATION_RESULT_BANNER } from "../src/ui/trust-labels.ts";
 import {
@@ -14,6 +23,8 @@ import {
   actionSimulateApprove,
   actionSimulateReject,
 } from "../src/ui/hire-actions.ts";
+import { EvidenceViewer } from "./EvidenceViewer.tsx";
+import { LifecycleStrip } from "./LifecycleStrip.tsx";
 
 const FIXTURES: readonly HireJobFixtureKind[] = [
   "success-aapl",
@@ -25,7 +36,7 @@ const FIXTURES: readonly HireJobFixtureKind[] = [
   "compatible-payment-unapproved-402",
 ];
 
-const STEPS = [
+const HIRE_STEPS = [
   "Understand",
   "Enter inputs",
   "Review quote",
@@ -33,7 +44,45 @@ const STEPS = [
   "Simulated result",
 ] as const;
 
-function activeStep(session: HireSessionSnapshot): number {
+const FALLBACK_LADDER: EvidenceLadderView = {
+  current: "L0",
+  rungs: [
+    {
+      level: "L0",
+      title: "Advertised / discovery only",
+      meaning: "Local catalog evidence only.",
+      reached: true,
+    },
+    {
+      level: "L1",
+      title: "Documented interface",
+      meaning: "Not reached offline.",
+      reached: false,
+    },
+    {
+      level: "L2",
+      title: "Reachability observed",
+      meaning: "Not reached offline.",
+      reached: false,
+    },
+    {
+      level: "L3",
+      title: "Authorized gated attempt",
+      meaning: "Not reached offline.",
+      reached: false,
+    },
+    {
+      level: "L4",
+      title: "Provider-verified hire outcome",
+      meaning: "Not available offline.",
+      reached: false,
+    },
+  ],
+  simulationUpgradesLadder: false,
+  notes: ["Fallback ladder — capability record not supplied"],
+};
+
+function activeHireStep(session: HireSessionSnapshot): number {
   if (session.fixtureResult) return 4;
   if (session.session) return 3;
   if (session.liveQuote || session.syntheticQuoteRevealed) return 2;
@@ -45,13 +94,22 @@ export function HireConsole(props: {
   readonly capabilityId: string;
   readonly initial: HireSessionSnapshot;
   readonly displayName: string;
+  readonly capabilityRecord?: ServiceCapability | null;
 }) {
   const [session, setSession] = useState(props.initial);
   const [kind, setKind] = useState<"ticker" | "companyName">("ticker");
   const [value, setValue] = useState("AAPL");
   const [fixture, setFixture] = useState<HireJobFixtureKind>("success-aapl");
   const [pending, startTransition] = useTransition();
-  const step = useMemo(() => activeStep(session), [session]);
+  const step = useMemo(() => activeHireStep(session), [session]);
+  const ladder = useMemo(
+    () =>
+      props.capabilityRecord
+        ? assessEvidenceLadder(props.capabilityRecord)
+        : FALLBACK_LADDER,
+    [props.capabilityRecord],
+  );
+  const agent402 = useMemo(() => buildAgent402PowDisplayView(), []);
 
   function run(action: () => Promise<HireSessionSnapshot | null>) {
     startTransition(async () => {
@@ -64,6 +122,7 @@ export function HireConsole(props: {
     return (
       <section className="panel" aria-labelledby="hire-console-heading">
         <h2 id="hire-console-heading">Guided hire unavailable</h2>
+        <LifecycleStrip lifecycle={session.lifecycle} highlightPhase="evaluate" />
         <div className="callout danger" role="status">
           {session.blockReason}
         </div>
@@ -72,6 +131,24 @@ export function HireConsole(props: {
           and offline simulation are not available here. No input schema is
           invented when adapters are absent. No generic executor.
         </p>
+
+        <section aria-labelledby="auth-distinctions-heading">
+          <h3 id="auth-distinctions-heading">Authorization distinctions</h3>
+          <p className="mono">{formatPowDisplayStatus(agent402.status)}</p>
+          <ul>
+            {agent402.distinctions.map((d) => (
+              <li key={d.kind}>
+                <strong>{d.label}</strong> — {d.note} (liveExecution=
+                {String(d.meansLiveExecution)}; livePayment=
+                {String(d.meansLivePayment)})
+              </li>
+            ))}
+          </ul>
+          <div className="callout" role="note">
+            Offline UI approval ≠ live auth. Agent402 PoW ≠ x402 payment. D7.3
+            PoW runtime is display-only here (not merged).
+          </div>
+        </section>
       </section>
     );
   }
@@ -87,8 +164,10 @@ export function HireConsole(props: {
       </h2>
       <p className="mono">capabilityId={props.capabilityId}</p>
 
+      <LifecycleStrip lifecycle={session.lifecycle} />
+
       <ol className="hire-steps" aria-label="Hire progress">
-        {STEPS.map((label, index) => (
+        {HIRE_STEPS.map((label, index) => (
           <li
             key={label}
             className={
@@ -105,6 +184,7 @@ export function HireConsole(props: {
       <div className="callout" role="note">
         Live quote unavailable. Interface undocumented. Payment unavailable /
         unverified. Simulation only — QuantJourney did not return these results.
+        Offline UI approval ≠ live authorization.
       </div>
 
       <section
@@ -136,6 +216,11 @@ export function HireConsole(props: {
             <span className="mono">AAPL</span>,{" "}
             <span className="mono">MSFT</span>,{" "}
             <span className="mono">Apple Inc.</span>
+          </dd>
+          <dt>Evidence ladder</dt>
+          <dd>
+            {ladder.current} — simulation never upgrades ladder (
+            {String(ladder.simulationUpgradesLadder)})
           </dd>
         </dl>
       </section>
@@ -172,7 +257,7 @@ export function HireConsole(props: {
           </label>
           <p id="hire-value-hint" className="mono">
             Local validation only — URLs and empty values are rejected. Changing
-            input after approval clears prior approval state.
+            sensitive input after approval clears prior approval state.
           </p>
           <div className="hire-actions">
             <button
@@ -203,6 +288,12 @@ export function HireConsole(props: {
               {session.validationError}
             </div>
           ) : null}
+          {session.authorizationInvalidated ? (
+            <div className="callout danger" role="status" data-testid="auth-invalidated">
+              Prior simulation approval invalidated after sensitive input change.
+              Offline UI approval ≠ live auth.
+            </div>
+          ) : null}
           {session.input ? (
             <p className="mono">configured: {JSON.stringify(session.input)}</p>
           ) : null}
@@ -230,7 +321,7 @@ export function HireConsole(props: {
       ) : null}
 
       <section className="hire-step-panel" aria-labelledby="hire-step-3">
-        <h3 id="hire-step-3">3. Review quote</h3>
+        <h3 id="hire-step-3">3. Review quote / authorization boundary</h3>
         {session.liveQuote ? (
           <div className="callout danger" role="status">
             Live quote unavailable —{" "}
@@ -241,6 +332,20 @@ export function HireConsole(props: {
             Live quote stays unavailable for this capability.
           </p>
         )}
+        <ul className="auth-distinctions">
+          <li>
+            <strong>Offline UI approval</strong> — local simulation only; never
+            live execution or payment.
+          </li>
+          <li>
+            <strong>x402 payment challenge</strong> — payment-required offer
+            parsing; distinct from PoW; stays unauthorized offline.
+          </li>
+          <li>
+            <strong>Agent402 PoW</strong> — separate gated path (D7.3 display
+            only here); not payment settlement.
+          </li>
+        </ul>
         <div className="hire-actions">
           <button
             type="button"
@@ -255,17 +360,23 @@ export function HireConsole(props: {
           </button>
         </div>
         {session.syntheticQuoteRevealed && session.syntheticQuote ? (
-          <p className="mono">
-            SYNTHETIC quote status={session.syntheticQuote.status}; amount=
-            {session.syntheticQuote.amount.displayUsdc ?? "unknown"};
-            paymentReady={String(session.syntheticQuote.paymentReady)};
-            provenance={session.syntheticQuote.provenance}
-          </p>
+          <div className="quote-card" data-testid="synthetic-quote-card">
+            <p className="mono">
+              SYNTHETIC quote status={session.syntheticQuote.status}; amount=
+              {session.syntheticQuote.amount.displayUsdc ?? "unknown"};
+              paymentReady={String(session.syntheticQuote.paymentReady)};
+              provenance={session.syntheticQuote.provenance};
+              executionAuthorization=
+              {String(session.syntheticQuote.executionAuthorization)};
+              paymentExecutionAuthorization=
+              {String(session.syntheticQuote.paymentExecutionAuthorization)}
+            </p>
+          </div>
         ) : null}
       </section>
 
       <section className="hire-step-panel" aria-labelledby="hire-step-4">
-        <h3 id="hire-step-4">4. Approve / reject (simulation)</h3>
+        <h3 id="hire-step-4">4. Approve / reject (simulation ≠ live auth)</h3>
         <div className="hire-actions">
           <button
             type="button"
@@ -313,7 +424,8 @@ export function HireConsole(props: {
             executionAuthorization=
             {String(session.session.flags.executionAuthorization)};
             paymentExecutionAuthorization=
-            {String(session.session.flags.paymentExecutionAuthorization)}
+            {String(session.session.flags.paymentExecutionAuthorization)};
+            simulationOnly={String(session.session.flags.simulationOnly)}
           </p>
         ) : (
           <p className="mono">
@@ -325,7 +437,7 @@ export function HireConsole(props: {
       {session.actionFeedback ? (
         <div
           className={
-            /ok=false|failed|Revoke|rejected|empty:|invalid/i.test(
+            /ok=false|failed|Revoke|rejected|empty:|invalid|invalidat/i.test(
               session.actionFeedback,
             )
               ? "callout danger"
@@ -339,7 +451,7 @@ export function HireConsole(props: {
       ) : null}
 
       <section className="hire-step-panel" aria-labelledby="hire-step-5">
-        <h3 id="hire-step-5">5. View simulated result</h3>
+        <h3 id="hire-step-5">5. Execute simulated result</h3>
         <div className="hire-actions">
           <label htmlFor="hire-fixture">
             Fixture kind
@@ -375,22 +487,14 @@ export function HireConsole(props: {
         </div>
       ) : null}
 
-      {session.fixtureResult ? (
-        <div>
-          <h3>Fixture result</h3>
-          <p className="mono">
-            kind={session.fixtureResult.kind}; ok=
-            {String(session.fixtureResult.ok)}; status=
-            {session.fixtureResult.job.status}; providerExecutionVerified=
-            {String(
-              session.fixtureResult.job.result.providerExecutionVerified,
-            )}
-          </p>
-          <pre className="mono" style={{ whiteSpace: "pre-wrap" }}>
-            {JSON.stringify(session.fixtureResult.job.result.payload, null, 2)}
-          </pre>
-        </div>
-      ) : null}
+      <EvidenceViewer
+        lifecycle={session.lifecycle}
+        ladder={ladder}
+        evidence={session.evidenceView}
+        evidenceJson={session.evidenceJson}
+        fixtureKind={session.fixtureResult?.kind ?? null}
+        fixtureOk={session.fixtureResult?.ok ?? null}
+      />
 
       {session.notes.length > 0 ? (
         <details

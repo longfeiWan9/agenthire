@@ -633,6 +633,73 @@ button[aria-disabled="true"] {
   gap: 0.5rem;
 }
 
+.lifecycle-panel {
+  margin: 0.75rem 0 1rem;
+}
+
+.lifecycle-meta {
+  margin: 0.35rem 0 0;
+  color: var(--ink-soft);
+}
+
+.evidence-ladder {
+  list-style: none;
+  margin: 0.75rem 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.evidence-ladder li {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.55rem 0.75rem;
+  background: #fff;
+  color: var(--ink-soft);
+  font-size: 0.86rem;
+}
+
+.evidence-ladder li.reached {
+  border-color: #b9dfc8;
+  background: var(--ok-bg);
+  color: var(--ink);
+}
+
+.evidence-json {
+  max-height: 22rem;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.75rem;
+  background: #fff;
+}
+
+.quote-card {
+  margin-top: 0.75rem;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  padding: 0.75rem;
+  background: color-mix(in srgb, var(--sand) 55%, #fff);
+}
+
+.auth-distinctions {
+  margin: 0.5rem 0 0.75rem;
+  padding-left: 1.2rem;
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+}
+
+.scenario-list {
+  display: grid;
+  gap: 1rem;
+  padding-left: 1.2rem;
+}
+
+.scenario-list h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
 .mono {
   font-family: var(--font-mono);
   font-size: 0.85rem;

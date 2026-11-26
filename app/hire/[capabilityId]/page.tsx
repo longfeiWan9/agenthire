@@ -59,6 +59,7 @@ export default async function HirePage({
         capabilityId={capabilityId}
         displayName={quality.publicTitle}
         initial={initial}
+        capabilityRecord={record}
       />
     </>
   );

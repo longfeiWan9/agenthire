@@ -41,6 +41,15 @@ import {
   buildUnavailableQuotePreview,
 } from "../hiring/quote-preview.ts";
 import type { NormalizedQuotePreview } from "../hiring/quote-types.ts";
+import {
+  deriveExecutionLifecycle,
+  type ExecutionLifecycleView,
+} from "../marketplace/execution-lifecycle.ts";
+import {
+  formatSanitizedJson,
+  sanitizeEvidencePayload,
+  type SanitizedEvidenceView,
+} from "./evidence-sanitizer.ts";
 import { SIMULATION_RESULT_BANNER } from "./trust-labels.ts";
 
 export type HireKind = "ticker" | "companyName";
@@ -68,20 +77,98 @@ export type HireSessionSnapshot = {
   /** Latest user-visible action outcome (not buried in collapsed notes). */
   readonly actionFeedback: string | null;
   readonly notes: readonly string[];
+  /** D8.1: typed lifecycle independent of evidence ladder. */
+  readonly lifecycle: ExecutionLifecycleView;
+  /** True when a sensitive input change cleared a prior approval. */
+  readonly authorizationInvalidated: boolean;
+  /** D8.1: sanitized evidence viewer payload (no secrets). */
+  readonly evidenceView: SanitizedEvidenceView | null;
+  readonly evidenceJson: string | null;
 };
 
 const FIXED_AT = "1970-01-01T00:00:00.000Z";
 
-function emptySnapshot(capabilityId: string): HireSessionSnapshot {
-  const supported = capabilityId === SEC_IDENTITY_CAPABILITY_ID;
+function approvalStateOf(
+  session: ApprovalSession | null,
+):
+  | "none"
+  | "notRequested"
+  | "simulationApproved"
+  | "simulationRejected"
+  | "revoked"
+  | "expired"
+  | "blocked" {
+  if (!session) return "none";
+  return session.state;
+}
+
+function withLifecycle(
+  snap: Omit<
+    HireSessionSnapshot,
+    "lifecycle" | "evidenceView" | "evidenceJson"
+  > & {
+    readonly lifecycle?: ExecutionLifecycleView;
+    readonly evidenceView?: SanitizedEvidenceView | null;
+    readonly evidenceJson?: string | null;
+  },
+): HireSessionSnapshot {
+  const lifecycle = deriveExecutionLifecycle({
+    supported: snap.supported,
+    blockReason: snap.blockReason,
+    hasInput: snap.input != null,
+    hasJob: snap.job != null,
+    quoteUnavailable: snap.job?.status === "quoteUnavailable",
+    syntheticQuoteRevealed: snap.syntheticQuoteRevealed,
+    approvalState: approvalStateOf(snap.session),
+    authorizationInvalidated: snap.authorizationInvalidated,
+    hasFixtureResult: snap.fixtureResult != null,
+    fixtureOk: snap.fixtureResult?.ok ?? null,
+    evidenceLadder: "L0",
+  });
+
+  let evidenceView = snap.evidenceView ?? null;
+  let evidenceJson = snap.evidenceJson ?? null;
+  if (snap.fixtureResult && evidenceView == null) {
+    evidenceView = sanitizeEvidencePayload(
+      snap.fixtureResult.job.result.payload,
+      snap.fixtureResult.banner || SIMULATION_RESULT_BANNER,
+    );
+    evidenceJson = formatSanitizedJson(evidenceView);
+  }
+
   return {
+    ...snap,
+    lifecycle,
+    evidenceView,
+    evidenceJson,
+  };
+}
+
+function emptySnapshot(
+  capabilityId: string,
+  extras?: {
+    readonly authorizationInvalidated?: boolean;
+    readonly actionFeedback?: string | null;
+    readonly notes?: readonly string[];
+    readonly validationError?: string | null;
+  },
+): HireSessionSnapshot {
+  const supported = capabilityId === SEC_IDENTITY_CAPABILITY_ID;
+  const baseNotes = supported
+    ? [
+        "Offline fixture mode only",
+        "Live quote unavailable — interface undocumented",
+        "Payment unverified / unavailable",
+      ]
+    : ["Discoverable only — hiring not authorized"];
+  return withLifecycle({
     capabilityId,
     supported,
     blockReason: supported
       ? null
       : "Live hire blocked — offline SEC demo is available only for cap:79da211975c2 (QuantJourney SEC Company Identity). No generic executor.",
     input: null,
-    validationError: null,
+    validationError: extras?.validationError ?? null,
     job: null,
     liveQuote: null,
     syntheticQuote: null,
@@ -90,15 +177,10 @@ function emptySnapshot(capabilityId: string): HireSessionSnapshot {
     session: null,
     fixtureResult: null,
     banner: null,
-    actionFeedback: null,
-    notes: supported
-      ? [
-          "Offline fixture mode only",
-          "Live quote unavailable — interface undocumented",
-          "Payment unverified / unavailable",
-        ]
-      : ["Discoverable only — hiring not authorized"],
-  };
+    actionFeedback: extras?.actionFeedback ?? null,
+    notes: extras?.notes ?? baseNotes,
+    authorizationInvalidated: extras?.authorizationInvalidated ?? false,
+  });
 }
 
 /** In-memory demo store (single Node process). */
@@ -118,9 +200,18 @@ export function getOrCreateHireSession(
   return snap;
 }
 
-function save(snap: HireSessionSnapshot): HireSessionSnapshot {
-  sessions.set(snap.capabilityId, snap);
-  return snap;
+function save(
+  snap: Omit<
+    HireSessionSnapshot,
+    "lifecycle" | "evidenceView" | "evidenceJson"
+  > &
+    Partial<
+      Pick<HireSessionSnapshot, "lifecycle" | "evidenceView" | "evidenceJson">
+    >,
+): HireSessionSnapshot {
+  const next = withLifecycle(snap);
+  sessions.set(next.capabilityId, next);
+  return next;
 }
 
 export function configureHireInput(
@@ -136,32 +227,55 @@ export function configureHireInput(
       ? { kind: "ticker", ticker: value }
       : { kind: "companyName", companyName: value };
 
+  const hadPriorApproval =
+    base.session != null ||
+    base.binding != null ||
+    base.syntheticQuoteRevealed ||
+    base.job != null;
+
   const validated = validateSecCompanyIdentityInput(raw);
   if (!validated.ok) {
     const msg = `${validated.code}: ${validated.message}`;
-    const cleared = emptySnapshot(capabilityId);
-    return save({
-      ...cleared,
-      input: null,
-      validationError: msg,
-      actionFeedback: msg,
-      notes: [...cleared.notes, "input validation failed locally"],
-    });
+    return save(
+      emptySnapshot(capabilityId, {
+        authorizationInvalidated: hadPriorApproval,
+        validationError: msg,
+        actionFeedback: msg,
+        notes: [
+          "Offline fixture mode only",
+          "Live quote unavailable — interface undocumented",
+          "Payment unverified / unavailable",
+          "input validation failed locally",
+          ...(hadPriorApproval
+            ? [
+                "Prior HireJob / quote / approval state cleared after input change",
+              ]
+            : []),
+        ],
+      }),
+    );
   }
 
   // Full reset: changing input must drop job/quote/approval and not keep
   // stale note lines like approval.state=simulationApproved.
-  const cleared = emptySnapshot(capabilityId);
+  const cleared = emptySnapshot(capabilityId, {
+    authorizationInvalidated: hadPriorApproval,
+  });
   return save({
     ...cleared,
     input: validated.value,
     validationError: null,
-    actionFeedback: `Input accepted (${kind}) — Create HireJob enabled`,
+    actionFeedback: hadPriorApproval
+      ? `Input accepted (${kind}) — prior approval invalidated; Create HireJob enabled`
+      : `Input accepted (${kind}) — Create HireJob enabled`,
     notes: [
-      ...cleared.notes,
+      "Offline fixture mode only",
+      "Live quote unavailable — interface undocumented",
+      "Payment unverified / unavailable",
       `configured kind=${kind}`,
       "Prior HireJob / quote / approval state cleared after input change",
     ],
+    authorizationInvalidated: hadPriorApproval,
   });
 }
 
@@ -226,6 +340,11 @@ export function createValidatedHireJob(
     job,
     liveQuote,
     validationError: null,
+    authorizationInvalidated: false,
+    fixtureResult: null,
+    banner: null,
+    evidenceView: null,
+    evidenceJson: null,
     actionFeedback:
       "HireJob created — live quote unavailable; simulation only",
     notes: [
@@ -422,6 +541,7 @@ export function revokeHireApproval(
   return save({
     ...base,
     session: result.session,
+    authorizationInvalidated: true,
     actionFeedback: `Approval revoked — state=${result.session.state}`,
     notes: [...base.notes, `approval.state=${result.session.state}`],
   });
@@ -435,6 +555,16 @@ export function runNamedOfflineFixture(
   if (!base.supported) return base;
 
   const run = runOfflineHireJobFixture(kind, FIXED_AT);
+  // Inject a secret-like key into a copy for sanitizer coverage (never real secrets).
+  const rawPayload = run.job.result.payload;
+  const payloadWithTrap =
+    rawPayload && typeof rawPayload === "object" && !Array.isArray(rawPayload)
+      ? { ...(rawPayload as Record<string, unknown>), apiKey: "trap-should-redact" }
+      : rawPayload;
+  const evidenceView = sanitizeEvidencePayload(
+    payloadWithTrap,
+    run.banner || SIMULATION_RESULT_BANNER,
+  );
   return save({
     ...base,
     fixtureResult: {
@@ -445,6 +575,9 @@ export function runNamedOfflineFixture(
       notes: run.notes,
     },
     banner: SIMULATION_RESULT_BANNER,
+    evidenceView,
+    evidenceJson: formatSanitizedJson(evidenceView),
+    authorizationInvalidated: false,
     actionFeedback: `Fixture ${kind} finished — providerExecutionVerified=false`,
     notes: [
       ...base.notes,
@@ -452,6 +585,7 @@ export function runNamedOfflineFixture(
       `fixture=${kind}`,
       `terminal=${run.job.status}`,
       "providerExecutionVerified=false",
+      `secretsRedacted=${evidenceView.secretsRedacted}`,
     ],
   });
 }

@@ -63,7 +63,7 @@ describe("D6.1 UI hardening regressions", () => {
     expect(header).toMatch(/skip-link/);
     expect(header).toMatch(/#main-content/);
     expect(layout).toMatch(/id="main-content"/);
-    expect(layout).toMatch(/AgentHire D7\.1/);
+    expect(layout).toMatch(/AgentHire D8\.1/);
     expect(css).toMatch(/:focus-visible/);
     expect(css).toMatch(/prefers-reduced-motion/);
     expect(css).not.toMatch(/animation:\s*rise[^;]*\bboth\b/);
