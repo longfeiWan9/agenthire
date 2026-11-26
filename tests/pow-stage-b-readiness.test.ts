@@ -377,10 +377,10 @@ describe("D7.3 Stage B — transport / marker binding (offline)", () => {
 
   it("keeps GET/POST markers distinct from Stage A schema marker and JSONVALIDATE", () => {
     expect(POW_CHALLENGE_GET_MARKER_REL).toBe(
-      "docs/day7/evidence/agent402-pow-challenge-get-001-live-attempt.marker",
+      "docs/day7/evidence/agent402-pow-l3-get-002-live-attempt.marker",
     );
     expect(POW_SUBMIT_POST_MARKER_REL).toBe(
-      "docs/day7/evidence/agent402-pow-submit-post-001-live-attempt.marker",
+      "docs/day7/evidence/agent402-pow-l3-post-002-live-attempt.marker",
     );
     expect(POW_CHALLENGE_GET_MARKER_REL).not.toContain(
       "agent402-pow-challenge-get-001.marker",

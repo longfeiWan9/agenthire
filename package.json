@@ -30,6 +30,7 @@
     "inspect:agent402-openapi": "tsx src/scripts/inspect-agent402-openapi.ts",
     "observe:agent402-jsonvalidate": "tsx src/scripts/observe-agent402-jsonvalidate.ts",
     "observe:agent402-challenge-schema": "tsx src/scripts/observe-agent402-challenge-schema.ts",
+    "pow:operator": "tsx src/scripts/pow-operator.ts",
     "build:marketplace": "tsx src/scripts/build-marketplace-catalog.ts",
     "demo:hirejob:offline": "tsx src/scripts/demo-hirejob-offline.ts",
     "demo:hirejob:quote:offline": "tsx src/scripts/demo-hirejob-quote-offline.ts"

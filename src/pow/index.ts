@@ -4,6 +4,7 @@
  */
 
 export * from "./types.ts";
+export * from "./auth-limits.ts";
 export * from "./solver.ts";
 export * from "./challenge.ts";
 export * from "./envelope.ts";
@@ -12,3 +13,4 @@ export * from "./state-machine.ts";
 export * from "./fake-transport.ts";
 export * from "./evidence.ts";
 export * from "./adapter.ts";
+export * from "./operator-cli.ts";

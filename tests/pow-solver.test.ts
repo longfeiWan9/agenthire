@@ -48,9 +48,9 @@ describe("PoW solver (offline, synthetic)", () => {
       challenge: {
         token: "tok",
         challenge: "hard",
-        difficultyBits: 30,
+        difficultyBits: 20,
       },
-      budget: { maxAttempts: 50, maxDurationMs: 60_000, maxDifficultyBits: 32 },
+      budget: { maxAttempts: 50, maxDurationMs: 30_000, maxDifficultyBits: 20 },
     });
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -63,13 +63,28 @@ describe("PoW solver (offline, synthetic)", () => {
       challenge: {
         token: "tok",
         challenge: "x",
-        difficultyBits: 28,
+        difficultyBits: 18,
       },
       budget: { maxDifficultyBits: 16 },
     });
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reason).toBe("difficultyTooHard");
+  });
+
+  it("rejects attempts to raise difficulty ceiling above authorized max", async () => {
+    const result = await solvePowChallenge({
+      challenge: {
+        token: "tok",
+        challenge: "x",
+        difficultyBits: 8,
+      },
+      budget: { maxDifficultyBits: 21 },
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason).toBe("difficultyTooHard");
+    expect(result.message).toMatch(/exceeds authorized ceiling/);
   });
 
   it("cancels via AbortSignal", async () => {

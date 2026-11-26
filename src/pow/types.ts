@@ -22,24 +22,46 @@ export const POW_INFO_URL = "https://agent402.tools/api/pow" as const;
 export const POW_SLUG = "json-validate" as const;
 export const POW_CAPABILITY_ID = "cap:fe75bb2e25f2" as const;
 
-/** Distinct one-time markers — GET challenge vs POST submit. */
+/**
+ * Distinct L3 one-time authorization identities (D7.3 operator / Stage B scope).
+ * Distinct from Stage A schema observe (`POW-CHALLENGE-GET-001`) and from
+ * earlier dual-live proposal markers (`*-get-001-live-attempt` /
+ * `*-post-001-live-attempt`), which must never be reset or reused.
+ */
+export const POW_CHALLENGE_GET_REQUEST_ID = "POW-L3-GET-002" as const;
+export const POW_SUBMIT_POST_REQUEST_ID = "POW-L3-POST-002" as const;
+
 export const POW_CHALLENGE_GET_MARKER_REL =
-  "docs/day7/evidence/agent402-pow-challenge-get-001-live-attempt.marker" as const;
+  "docs/day7/evidence/agent402-pow-l3-get-002-live-attempt.marker" as const;
 export const POW_SUBMIT_POST_MARKER_REL =
-  "docs/day7/evidence/agent402-pow-submit-post-001-live-attempt.marker" as const;
+  "docs/day7/evidence/agent402-pow-l3-post-002-live-attempt.marker" as const;
 
-export const POW_CHALLENGE_GET_REQUEST_ID =
-  "POW-CHALLENGE-GET-001" as const;
-export const POW_SUBMIT_POST_REQUEST_ID = "POW-SUBMIT-POST-001" as const;
+/**
+ * Stage B Product-Owner approved ceilings (hard caps; cannot be raised).
+ * Challenge GET byte cap matches Stage A observe (16_384), not the older
+ * dual-live proposal of 65_536.
+ */
+export const POW_AUTHORIZED_MAX_ATTEMPTS = 2_000_000 as const;
+export const POW_AUTHORIZED_MAX_DURATION_MS = 30_000 as const;
+export const POW_AUTHORIZED_MAX_DIFFICULTY_BITS = 20 as const;
+export const POW_AUTHORIZED_MAX_HTTP_TIMEOUT_MS = 5_000 as const;
+export const POW_AUTHORIZED_CHALLENGE_MAX_BYTES = 16_384 as const;
+export const POW_AUTHORIZED_SUBMIT_MAX_BYTES = 65_536 as const;
+export const POW_AUTHORIZED_MIN_EXPIRY_MARGIN_MS = 5_000 as const;
+export const POW_AUTHORIZED_MAX_CHALLENGE_GETS = 1 as const;
+export const POW_AUTHORIZED_MAX_SUBMIT_POSTS = 1 as const;
+export const POW_AUTHORIZED_MAX_REDIRECTS = 0 as const;
+export const POW_AUTHORIZED_MAX_RETRIES = 0 as const;
 
-/** Default solver budgets (offline / future live). */
-export const POW_DEFAULT_MAX_ATTEMPTS = 2_000_000 as const;
-export const POW_DEFAULT_MAX_DURATION_MS = 30_000 as const;
-export const POW_DEFAULT_MAX_DIFFICULTY_BITS = 24 as const;
-export const POW_CHALLENGE_TIMEOUT_MS = 5_000 as const;
-export const POW_SUBMIT_TIMEOUT_MS = 5_000 as const;
-export const POW_CHALLENGE_MAX_BYTES = 65_536 as const;
-export const POW_SUBMIT_MAX_BYTES = 65_536 as const;
+/** Default solver budgets (must not exceed authorized ceilings). */
+export const POW_DEFAULT_MAX_ATTEMPTS = POW_AUTHORIZED_MAX_ATTEMPTS;
+export const POW_DEFAULT_MAX_DURATION_MS = POW_AUTHORIZED_MAX_DURATION_MS;
+export const POW_DEFAULT_MAX_DIFFICULTY_BITS =
+  POW_AUTHORIZED_MAX_DIFFICULTY_BITS;
+export const POW_CHALLENGE_TIMEOUT_MS = POW_AUTHORIZED_MAX_HTTP_TIMEOUT_MS;
+export const POW_SUBMIT_TIMEOUT_MS = POW_AUTHORIZED_MAX_HTTP_TIMEOUT_MS;
+export const POW_CHALLENGE_MAX_BYTES = POW_AUTHORIZED_CHALLENGE_MAX_BYTES;
+export const POW_SUBMIT_MAX_BYTES = POW_AUTHORIZED_SUBMIT_MAX_BYTES;
 
 /**
  * Agent402 challenge API contract (Stage A schema observation, redacted).

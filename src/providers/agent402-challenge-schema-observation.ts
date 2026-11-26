@@ -25,11 +25,7 @@ import {
   type SecureHttpsExchange,
 } from "../erc8004/secure-https.ts";
 import { parsePowChallengeJson } from "../pow/challenge.ts";
-import {
-  POW_CHALLENGE_GET_REQUEST_ID,
-  POW_CHALLENGE_URL,
-  POW_SLUG,
-} from "../pow/types.ts";
+import { POW_CHALLENGE_URL, POW_SLUG } from "../pow/types.ts";
 import { sanitizeEndpointForArtifact } from "./inspection-policy.ts";
 import { envProxyPresent } from "./agent402-jsonvalidate-observation.ts";
 
@@ -37,11 +33,12 @@ export const CHALLENGE_SCHEMA_OBS_VERSION = "1.0" as const;
 export const CHALLENGE_SCHEMA_OBS_MODE =
   "SCHEMA_OBSERVE_ONLY / ONE_APPROVED_GET_ONLY / NO_SOLVE / NO_POST" as const;
 
-export const STAGE_A_REQUEST_ID = POW_CHALLENGE_GET_REQUEST_ID;
+/** Stage A schema-observe auth id (distinct from L3 dual-live POW-L3-*-002). */
+export const STAGE_A_REQUEST_ID = "POW-CHALLENGE-GET-001" as const;
 export const STAGE_A_APPROVED_URL = POW_CHALLENGE_URL;
 export const STAGE_A_METHOD = "GET" as const;
 export const STAGE_A_TIMEOUT_MS = 5_000 as const;
-/** Stage A Product-Owner cap (stricter than dual-live proposal 65_536). */
+/** Stage A Product-Owner cap (aligned with authorized L3 challenge GET). */
 export const STAGE_A_MAX_BYTES = 16_384 as const;
 
 export const STAGE_A_MARKER_REL =
@@ -306,6 +303,12 @@ function isForbiddenPriorMarkerPath(markerPath: string): boolean {
     ) ||
     normalized.endsWith(
       "docs/day7/evidence/agent402-pow-submit-post-001-live-attempt.marker",
+    ) ||
+    normalized.endsWith(
+      "docs/day7/evidence/agent402-pow-l3-get-002-live-attempt.marker",
+    ) ||
+    normalized.endsWith(
+      "docs/day7/evidence/agent402-pow-l3-post-002-live-attempt.marker",
     )
   );
 }

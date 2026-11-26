@@ -1,8 +1,10 @@
 /**
  * One-time PoW attempt markers (D7.3).
  *
- * GET challenge and POST submit require separate exclusive markers.
- * Never reset consumed JSONVALIDATE-001/002 or OpenAPI/D4.4b markers.
+ * Identities: POW-L3-GET-002 (before first authorized network op) and
+ * POW-L3-POST-002 (only after challenge/solver/expiry gates, immediately
+ * before POST). Never reset consumed Stage A / JSONVALIDATE / prior live
+ * markers or historical evidence.
  */
 
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
@@ -37,6 +39,9 @@ export const POW_FORBIDDEN_PRIOR_MARKERS: readonly string[] = [
   "docs/day6/evidence/agent402-jsonvalidate-002-live-attempt.marker",
   "docs/day5/evidence/openapi-001-live-attempt.marker",
   "docs/day4/evidence/catalog-001-live-attempt.marker",
+  "docs/day7/evidence/agent402-pow-challenge-get-001.marker",
+  "docs/day7/evidence/agent402-pow-challenge-get-001-live-attempt.marker",
+  "docs/day7/evidence/agent402-pow-submit-post-001-live-attempt.marker",
 ];
 
 export function powMarkerRelFor(kind: PowMarkerKind): string {
@@ -82,7 +87,7 @@ export function isForbiddenPriorMarkerPath(markerPath: string): boolean {
 
 /**
  * Exclusive wx create for a PoW marker. Never overwrites. Never touches
- * JSONVALIDATE-001/002 or prior OpenAPI/catalog markers.
+ * Stage A / JSONVALIDATE / OpenAPI / catalog / prior dual-live markers.
  */
 export function writePowAttemptMarker(input: {
   readonly markerPath: string;
@@ -98,9 +103,14 @@ export function writePowAttemptMarker(input: {
   }
   if (isForbiddenPriorMarkerPath(input.markerPath)) {
     throw new Error(
-      "PoW must not write or reuse JSONVALIDATE / OpenAPI / catalog markers",
+      "PoW must not write or reuse Stage A / JSONVALIDATE / OpenAPI / catalog / prior dual-live markers",
     );
   }
+
+  const lifecycleNote =
+    input.kind === "challenge-get"
+      ? "Written immediately before the first authorized network op (GET) via exclusive wx create."
+      : "Written only after challenge parse, solver success, and expiry gates pass — immediately before POST.";
 
   const record: PowMarkerRecord = {
     schemaVersion: "1.0",
@@ -112,9 +122,9 @@ export function writePowAttemptMarker(input: {
     writtenAt: input.writtenAt ?? new Date(0).toISOString(),
     purpose: "single-use-live-attempt-guard",
     note:
-      "Written before network I/O via exclusive wx create. Presence blocks reuse. " +
-      "GET challenge auth is distinct from POST submit auth. " +
-      "Never reset JSONVALIDATE-001/002 markers.",
+      `${lifecycleNote} Presence blocks reuse. ` +
+      `${POW_CHALLENGE_GET_REQUEST_ID} is distinct from ${POW_SUBMIT_POST_REQUEST_ID}. ` +
+      "Never reset historical markers or evidence.",
   };
 
   mkdirSync(dirname(input.markerPath), { recursive: true });

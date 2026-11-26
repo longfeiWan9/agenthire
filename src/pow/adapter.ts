@@ -5,8 +5,12 @@
  * Reuses secure-HTTPS protections via injectable transport.
  *
  * Default runMode is offline-simulation. approved-live refuses unless
- * explicit liveAuthorizationGranted=true AND both markers can be written —
- * D7.3 never enables live by default and does not call the network.
+ * explicit liveAuthorizationGranted=true AND exclusive markers can be
+ * written — D7.3 never enables live by default and does not call the network.
+ *
+ * Marker lifecycle (approved-live):
+ *   POW-L3-GET-002  — immediately before first authorized network op
+ *   POW-L3-POST-002 — only after challenge/solver/expiry gates, before POST
  */
 
 import { createHash } from "node:crypto";
@@ -20,6 +24,10 @@ import {
   requestBodySha256 as jsonValidateBodySha256,
   canonicalRequestBodyJson,
 } from "../providers/agent402-jsonvalidate-observation.ts";
+import {
+  resolveAuthorizedExpiryMargin,
+  resolveAuthorizedSolverBudget,
+} from "./auth-limits.ts";
 import {
   assertExactPowChallengeUrl,
   assertExactPowSubmitUrl,
@@ -42,7 +50,6 @@ import {
   POW_CHALLENGE_TIMEOUT_MS,
   POW_CHALLENGE_URL,
   POW_EXPECTED_ENVELOPE,
-  POW_EXPIRY_SAFETY_MARGIN_MS,
   POW_SUBMIT_MAX_BYTES,
   POW_SUBMIT_TIMEOUT_MS,
   POW_SUBMIT_URL,
@@ -68,7 +75,7 @@ export type RunPowPreparationInput = {
   readonly runMode?: PowRunMode;
   /**
    * Must be true for approved-live. D7.3 offline prep leaves this false.
-   * Even when true, both exclusive markers are required before I/O.
+   * Even when true, exclusive GET then POST markers are required around I/O.
    */
   readonly liveAuthorizationGranted?: boolean;
   readonly repoRoot?: string;
@@ -80,7 +87,7 @@ export type RunPowPreparationInput = {
   readonly clockIso?: string;
   /** Override challenge JSON parse mode (default: live→contract, else compat). */
   readonly challengeParseMode?: PowChallengeParseMode;
-  /** Expiry safety margin in ms (default POW_EXPIRY_SAFETY_MARGIN_MS). */
+  /** Expiry safety margin in ms (default ≥ authorized minimum 5000). */
   readonly expiryMarginMs?: number;
   /** Test hook: skip marker writes even in approved-live (still requires auth flag). */
   readonly skipLiveMarkersForTest?: boolean;
@@ -96,10 +103,10 @@ export type RunPowPreparationResult = {
 
 export const POW_NON_ACTIONS = [
   "No live Agent402 HTTP/DNS in offline-simulation",
-  "No PoW challenge retrieve against production without approved-live + GET marker",
-  "No PoW submit against production without approved-live + POST marker",
+  "No PoW challenge retrieve against production without approved-live + POW-L3-GET-002 marker",
+  "No PoW submit against production without approved-live + POW-L3-POST-002 marker",
   "No wallet / signing / x402 payment / settlement / facilitator / RPC",
-  "No JSONVALIDATE-001/002 marker reset",
+  "No Stage A / JSONVALIDATE-001/002 / prior dual-live marker reset",
   "Simulation success ≠ ladder L3",
 ] as const;
 
@@ -236,7 +243,7 @@ async function submitWithSolution(input: {
  * offline-simulation: uses injected/fake transport, never claims L3.
  * approved-live: refused unless liveAuthorizationGranted and markers writable;
  * still uses transport injection (defaults to secureHttpsExchange) — D7.3
- * callers must not set approved-live.
+ * callers must not set approved-live without Product-Owner dual auth.
  */
 export async function runPowPreparation(
   input: RunPowPreparationInput,
@@ -259,6 +266,9 @@ export async function runPowPreparation(
     providerExecutionVerified: false,
     nonActions: POW_NON_ACTIONS,
   });
+
+  let writeLiveMarkers = false;
+  let liveRepoRoot: string | null = null;
 
   if (runMode === "approved-live") {
     if (input.liveAuthorizationGranted !== true) {
@@ -298,32 +308,56 @@ export async function runPowPreparation(
             type: "block",
             terminal: "unauthorized",
             reason:
-              "PoW live markers already exist — GET and POST each need fresh one-time auth",
+              "PoW live markers already exist — POW-L3-GET-002 and POW-L3-POST-002 each need fresh one-time auth (do not reset)",
           },
           clock,
         );
         if (!blocked.ok) throw new Error(blocked.message);
         return refuse(blocked.session);
       }
-      // Markers before any I/O — still do not call network in D7.3 tests.
-      writePowAttemptMarker({
-        markerPath: getMarker,
-        kind: "challenge-get",
-        writtenAt: clock,
-      });
-      writePowAttemptMarker({
-        markerPath: postMarker,
-        kind: "submit-post",
-        writtenAt: clock,
-      });
+      writeLiveMarkers = true;
+      liveRepoRoot = input.repoRoot;
     }
   }
 
+  const authorizedBudget = resolveAuthorizedSolverBudget(input.solverBudget);
+  if (!authorizedBudget.ok) {
+    const blocked = applyPowTransition(
+      session,
+      {
+        type: "block",
+        terminal: "unauthorized",
+        reason: authorizedBudget.reason,
+      },
+      clock,
+    );
+    if (!blocked.ok) throw new Error(blocked.message);
+    return refuse(blocked.session);
+  }
+
+  const authorizedMargin = resolveAuthorizedExpiryMargin(input.expiryMarginMs);
+  if (!authorizedMargin.ok) {
+    const blocked = applyPowTransition(
+      session,
+      {
+        type: "block",
+        terminal: "unauthorized",
+        reason: authorizedMargin.reason,
+      },
+      clock,
+    );
+    if (!blocked.ok) throw new Error(blocked.message);
+    return refuse(blocked.session);
+  }
+
   const networkLive = runMode === "approved-live";
+  /** Injected transports (tests / fakes) cannot mint genuine L3 claims. */
+  const injectedTransport = input.transport != null;
+  const simulationOnlySession = !networkLive || injectedTransport;
   const parseMode: PowChallengeParseMode =
     input.challengeParseMode ??
-    (networkLive ? "agent402-contract" : "compat");
-  const expiryMarginMs = input.expiryMarginMs ?? POW_EXPIRY_SAFETY_MARGIN_MS;
+    (networkLive && !injectedTransport ? "agent402-contract" : "compat");
+  const expiryMarginMs = authorizedMargin.marginMs;
   const nowFn = input.now ?? (() => Date.now());
   // D7.3 hard gate: never default to live network transport without auth.
   const transport: PowTransport =
@@ -341,9 +375,18 @@ export async function runPowPreparation(
   if (!step.ok) throw new Error(step.message);
   session = step.session;
 
+  // GET marker immediately before first authorized network op.
+  if (writeLiveMarkers && liveRepoRoot != null) {
+    writePowAttemptMarker({
+      markerPath: absPowMarkerPath(liveRepoRoot, "challenge-get"),
+      kind: "challenge-get",
+      writtenAt: clock,
+    });
+  }
+
   const challengeResult = await fetchChallenge({
     transport,
-    networkLive,
+    networkLive: networkLive && !injectedTransport,
     parseMode,
   });
   if (!challengeResult.ok) {
@@ -361,7 +404,7 @@ export async function runPowPreparation(
     return {
       session: step.session,
       requestBodySha256: bodySha,
-      simulationOnly: !networkLive,
+      simulationOnly: simulationOnlySession,
       providerExecutionVerified: false,
       nonActions: POW_NON_ACTIONS,
     };
@@ -402,7 +445,7 @@ export async function runPowPreparation(
     return {
       session: step.session,
       requestBodySha256: bodySha,
-      simulationOnly: !networkLive,
+      simulationOnly: simulationOnlySession,
       providerExecutionVerified: false,
       nonActions: POW_NON_ACTIONS,
     };
@@ -415,7 +458,7 @@ export async function runPowPreparation(
 
   const solveInput: SolvePowInput = {
     challenge: challengeResult.challenge,
-    budget: input.solverBudget,
+    budget: authorizedBudget.budget,
     signal: input.signal,
     now: nowFn,
   };
@@ -437,7 +480,7 @@ export async function runPowPreparation(
     return {
       session: step.session,
       requestBodySha256: bodySha,
-      simulationOnly: !networkLive,
+      simulationOnly: simulationOnlySession,
       providerExecutionVerified: false,
       nonActions: POW_NON_ACTIONS,
     };
@@ -472,7 +515,7 @@ export async function runPowPreparation(
     return {
       session: step.session,
       requestBodySha256: bodySha,
-      simulationOnly: !networkLive,
+      simulationOnly: simulationOnlySession,
       providerExecutionVerified: false,
       nonActions: POW_NON_ACTIONS,
     };
@@ -483,10 +526,19 @@ export async function runPowPreparation(
   if (!step.ok) throw new Error(step.message);
   session = step.session;
 
+  // POST marker only after challenge/solver/expiry gates — immediately before POST.
+  if (writeLiveMarkers && liveRepoRoot != null) {
+    writePowAttemptMarker({
+      markerPath: absPowMarkerPath(liveRepoRoot, "submit-post"),
+      kind: "submit-post",
+      writtenAt: clock,
+    });
+  }
+
   const submitted = await submitWithSolution({
     transport,
     headerValue: solved.solution.headerValue,
-    networkLive,
+    networkLive: networkLive && !injectedTransport,
   });
   if (!submitted.ok) {
     step = applyPowTransition(
@@ -504,7 +556,7 @@ export async function runPowPreparation(
     return {
       session: step.session,
       requestBodySha256: bodySha,
-      simulationOnly: !networkLive,
+      simulationOnly: simulationOnlySession,
       providerExecutionVerified: false,
       nonActions: POW_NON_ACTIONS,
     };
@@ -526,7 +578,7 @@ export async function runPowPreparation(
     return {
       session: step.session,
       requestBodySha256: bodySha,
-      simulationOnly: !networkLive,
+      simulationOnly: simulationOnlySession,
       providerExecutionVerified: false,
       nonActions: POW_NON_ACTIONS,
     };
@@ -551,13 +603,14 @@ export async function runPowPreparation(
     return {
       session: step.session,
       requestBodySha256: bodySha,
-      simulationOnly: !networkLive,
+      simulationOnly: simulationOnlySession,
       providerExecutionVerified: false,
       nonActions: POW_NON_ACTIONS,
     };
   }
 
-  const simulationOnly = !networkLive;
+  // Genuine L3 only when approved-live uses the default secure HTTPS transport.
+  const simulationOnly = simulationOnlySession;
   const providerExecutionVerified = networkLive && !simulationOnly;
 
   step = applyPowTransition(

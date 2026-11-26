@@ -9,11 +9,9 @@
  */
 
 import { createHash } from "node:crypto";
+import { resolveAuthorizedSolverBudget } from "./auth-limits.ts";
 import {
   POW_ALGORITHM,
-  POW_DEFAULT_MAX_ATTEMPTS,
-  POW_DEFAULT_MAX_DIFFICULTY_BITS,
-  POW_DEFAULT_MAX_DURATION_MS,
   POW_PREIMAGE_SEPARATOR,
   type PowChallenge,
   type PowSolveResult,
@@ -35,26 +33,12 @@ export type SolvePowInput = {
 
 function resolveBudget(
   partial: Partial<PowSolverBudget> | undefined,
-): PowSolverBudget {
-  const maxAttempts =
-    typeof partial?.maxAttempts === "number" &&
-    Number.isFinite(partial.maxAttempts) &&
-    partial.maxAttempts > 0
-      ? Math.floor(partial.maxAttempts)
-      : POW_DEFAULT_MAX_ATTEMPTS;
-  const maxDurationMs =
-    typeof partial?.maxDurationMs === "number" &&
-    Number.isFinite(partial.maxDurationMs) &&
-    partial.maxDurationMs > 0
-      ? Math.floor(partial.maxDurationMs)
-      : POW_DEFAULT_MAX_DURATION_MS;
-  const maxDifficultyBits =
-    typeof partial?.maxDifficultyBits === "number" &&
-    Number.isFinite(partial.maxDifficultyBits) &&
-    partial.maxDifficultyBits > 0
-      ? Math.floor(partial.maxDifficultyBits)
-      : POW_DEFAULT_MAX_DIFFICULTY_BITS;
-  return { maxAttempts, maxDurationMs, maxDifficultyBits };
+): PowSolverBudget | { readonly unauthorized: true; readonly message: string } {
+  const resolved = resolveAuthorizedSolverBudget(partial);
+  if (!resolved.ok) {
+    return { unauthorized: true, message: resolved.reason };
+  }
+  return resolved.budget;
 }
 
 /** Count leading zero bits in a SHA-256 digest (32 bytes). */
@@ -121,7 +105,22 @@ export function verifyPowSolution(input: {
 export async function solvePowChallenge(
   input: SolvePowInput,
 ): Promise<PowSolveResult> {
-  const budget = resolveBudget(input.budget);
+  const budgetOrFail = resolveBudget(input.budget);
+  if ("unauthorized" in budgetOrFail) {
+    const message = budgetOrFail.message;
+    const reason =
+      message.includes("maxDifficultyBits")
+        ? "difficultyTooHard"
+        : "invalidChallenge";
+    return {
+      ok: false,
+      reason,
+      attempts: 0,
+      elapsedMs: 0,
+      message,
+    };
+  }
+  const budget = budgetOrFail;
   const now = input.now ?? (() => Date.now());
   const started = now();
 
