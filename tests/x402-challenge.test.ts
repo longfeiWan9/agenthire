@@ -9,6 +9,7 @@ import {
   parsePaymentRequiredObject,
 } from "../src/x402/challenge-parser.ts";
 import {
+  APPROVED_MAINNET_USDC,
   APPROVED_PAYMENT_NETWORK,
   APPROVED_SEPOLIA_TEST_USDC,
   APPROVED_X402_SCHEME,
@@ -228,7 +229,9 @@ describe("x402 challenge parser (offline, synthetic)", () => {
     expect(policy.parseOk).toBe(true);
     expect(policy.anyStructurallyCompatible).toBe(true);
     expect(policy.anyPolicyPass).toBe(false);
-    expect(policy.evaluations[1]?.reasonCodes).toContain("networkMainnetRejected");
+    // D8.7: both Sepolia and Mainnet+matching-USDC alternatives are structurally OK
+    expect(policy.evaluations[0]?.structurallyCompatible).toBe(true);
+    expect(policy.evaluations[1]?.structurallyCompatible).toBe(true);
     expect(policy.evaluations[0]?.reasonCodes).toContain(
       "multipleAlternativesEvaluated",
     );
@@ -317,12 +320,15 @@ describe("x402 offer policy (offline, synthetic)", () => {
     );
   });
 
-  it("rejects Mainnet network even when parse succeeds", () => {
+  it("accepts Mainnet network when asset is Mainnet USDC (D8.7)", () => {
     const parsed = parseHttp402Challenge({
       fixtureKind: FIXTURE_KIND,
       httpStatus: 402,
       body: paymentRequiredEnvelope([
-        sepoliaExactOffer({ network: "eip155:8453" }),
+        sepoliaExactOffer({
+          network: "eip155:8453",
+          asset: APPROVED_MAINNET_USDC,
+        }),
       ]),
     });
     expect(parsed.ok).toBe(true);
@@ -330,28 +336,26 @@ describe("x402 offer policy (offline, synthetic)", () => {
       paymentApprovalGranted: true,
       declaredTaskId: MVP_TASK_ID,
     });
-    expect(policy.anyStructurallyCompatible).toBe(false);
-    expect(policy.anyPolicyPass).toBe(false);
-    expect(policy.evaluations[0]?.reasonCodes).toContain(
-      "networkMainnetRejected",
-    );
+    expect(policy.anyStructurallyCompatible).toBe(true);
+    expect(policy.anyPolicyPass).toBe(true);
+    expect(policy.evaluations[0]?.requirement?.network).toBe("eip155:8453");
   });
 
-  it("rejects wrong USDC asset address", () => {
+  it("rejects cross-network USDC substitution (Mainnet USDC on Sepolia offer)", () => {
     const parsed = parseHttp402Challenge({
       fixtureKind: FIXTURE_KIND,
       httpStatus: 402,
       body: paymentRequiredEnvelope([
         sepoliaExactOffer({
-          // Base Mainnet USDC — not approved for AgentHire payments
-          asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          // Base Mainnet USDC on Sepolia network — rejected
+          asset: APPROVED_MAINNET_USDC,
         }),
       ]),
     });
     const policy = evaluateOfferPolicy(parsed);
     expect(policy.anyStructurallyCompatible).toBe(false);
     expect(policy.evaluations[0]?.reasonCodes).toContain(
-      "assetNotApprovedSepoliaUsdc",
+      "assetNotApprovedUsdcForNetwork",
     );
   });
 
@@ -379,25 +383,32 @@ describe("x402 offer policy (offline, synthetic)", () => {
     expect(policy.anyStructurallyCompatible).toBe(false);
   });
 
-  it("policyPass true only with parse + structural + approval + task bind (synthetic)", () => {
+  it("policyPass requires parse + structural + approval; task schema not required (D8.7)", () => {
     const parsed = parseHttp402Challenge({
       fixtureKind: FIXTURE_KIND,
       httpStatus: 402,
       body: paymentRequiredEnvelope([sepoliaExactOffer()]),
     });
-    const denied = evaluateOfferPolicy(parsed, {
+    const nonCanonicalTask = evaluateOfferPolicy(parsed, {
       paymentApprovalGranted: true,
       declaredTaskId: "wallet-analytics",
     });
-    expect(denied.anyPolicyPass).toBe(false);
-    expect(denied.evaluations[0]?.reasonCodes).toContain("taskNotBound");
+    // Task note remains, but offer eligibility no longer requires MVP task bind.
+    expect(nonCanonicalTask.evaluations[0]?.reasonCodes).toContain("taskNotBound");
+    expect(nonCanonicalTask.anyPolicyPass).toBe(true);
 
-    const allowed = evaluateOfferPolicy(parsed, {
+    const noTask = evaluateOfferPolicy(parsed, {
+      paymentApprovalGranted: true,
+      declaredTaskId: null,
+    });
+    expect(noTask.anyStructurallyCompatible).toBe(true);
+    expect(noTask.anyPolicyPass).toBe(true);
+
+    const withMvpTask = evaluateOfferPolicy(parsed, {
       paymentApprovalGranted: true,
       declaredTaskId: MVP_TASK_ID,
     });
-    expect(allowed.anyStructurallyCompatible).toBe(true);
-    expect(allowed.anyPolicyPass).toBe(true);
+    expect(withMvpTask.anyPolicyPass).toBe(true);
   });
 
   it("failed parse never yields policy pass", () => {
@@ -416,7 +427,7 @@ describe("x402 offer policy (offline, synthetic)", () => {
 });
 
 describe("JSONVALIDATE-002 captured 402 (offline regression)", () => {
-  it("re-parses the immutable snapshot: EVM accepts kept; no Sepolia policy pass", () => {
+  it("re-parses the immutable snapshot: EVM accepts kept; no payment approval / no Sepolia accepts", () => {
     const raw = readFileSync(JSONVALIDATE_002_SNAPSHOT);
     expect(createHash("sha256").update(raw).digest("hex")).toBe(
       JSONVALIDATE_002_SHA,
@@ -449,14 +460,19 @@ describe("JSONVALIDATE-002 captured 402 (offline regression)", () => {
       declaredTaskId: null,
     });
     expect(policy.parseOk).toBe(true);
-    expect(policy.anyStructurallyCompatible).toBe(false);
+    // D8.7: Agent402 Mainnet+matching-USDC accepts may be structurally compatible;
+    // paymentApprovalGranted=false ⇒ anyPolicyPass stays false (NO_LIVE_PAYMENT).
     expect(policy.anyPolicyPass).toBe(false);
     expect(
       policy.evaluations.every(
+        (e) => e.requirement?.network !== APPROVED_PAYMENT_NETWORK,
+      ),
+    ).toBe(true);
+    expect(
+      policy.evaluations.every(
         (e) =>
-          e.requirement?.network !== APPROVED_PAYMENT_NETWORK &&
           e.requirement?.asset.toLowerCase() !==
-            APPROVED_SEPOLIA_TEST_USDC.toLowerCase(),
+          APPROVED_SEPOLIA_TEST_USDC.toLowerCase(),
       ),
     ).toBe(true);
   });

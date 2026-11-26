@@ -108,7 +108,7 @@ export function runOfflineHireJobFixture(
         type: "markQuoteUnavailable",
         reason:
           fixture.expectedPath === "paymentIncompatible"
-            ? "synthetic 402 structurally incompatible with Sepolia policy"
+            ? "synthetic 402 structurally incompatible with dual-network payment policy"
             : "synthetic 402 structurally compatible but paymentApprovalGranted=false; quote not payable",
       },
       createdAt,

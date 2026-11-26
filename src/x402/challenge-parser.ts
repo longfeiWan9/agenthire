@@ -265,6 +265,12 @@ function parseRequirement(
   const extra = entry.extra;
   const extraKeys =
     isPlainObject(extra) ? Object.keys(extra).sort() : ([] as string[]);
+  const assetTransferMethod =
+    isPlainObject(extra) &&
+    typeof extra.assetTransferMethod === "string" &&
+    extra.assetTransferMethod.trim()
+      ? extra.assetTransferMethod.trim()
+      : null;
 
   const resource =
     typeof entry.resource === "string" && entry.resource.trim()
@@ -290,6 +296,7 @@ function parseRequirement(
       mimeType,
       maxTimeoutSeconds: maxTimeout,
       outputSchemaPresent: entry.outputSchema !== undefined && entry.outputSchema !== null,
+      assetTransferMethod,
       extraKeys,
       rawKeys,
     },

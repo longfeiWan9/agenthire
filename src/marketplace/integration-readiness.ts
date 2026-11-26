@@ -227,7 +227,7 @@ export function assessIntegrationReadiness(
     notes: [
       "Integration readiness ≠ search ranking.",
       "All candidates approvedForNetworkExecution: false — no live follow-up authorized.",
-      "paymentCompatible remains false; Sepolia x402 discoverable ≠ payable.",
+      "paymentCompatible remains false; dual-network x402 discoverable ≠ payable.",
       "Prefer clear narrow read-only; destructive/credentialed/ambiguous excluded.",
       "Empty shortlist is valid when no safe candidates exist.",
       "Assessment spans all curated categories, not wallet-summary-only.",

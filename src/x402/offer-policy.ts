@@ -1,18 +1,29 @@
 /**
- * Offline x402 offer policy evaluation (D4.3b).
+ * Offline x402 offer policy evaluation (D4.3b / D8.7).
  *
- * Separates protocol parse success from AgentHire Sepolia payment policy.
- * Parser ≠ policy pass. Mainnet ≠ Sepolia. No signing / settlement.
+ * Separates protocol parse success from AgentHire dual-network payment policy.
+ * Parser ≠ policy pass. Registration network ≠ payment network.
+ * No signing / settlement / live facilitator proof.
+ *
+ * D8.7: Base Mainnet (eip155:8453) and Base Sepolia (eip155:84532) are both
+ * approved payment networks with distinct USDC addresses. Cross-network
+ * asset substitution is rejected. Task schema is NOT required for offer
+ * discovery / structural eligibility.
  */
 
 import { getAddress, isAddressEqual } from "viem";
 import type { ChallengeParseResult } from "./challenge-types.ts";
 import {
   APPROVED_PAYMENT_NETWORK,
+  APPROVED_PAYMENT_NETWORKS,
   APPROVED_SEPOLIA_TEST_USDC,
+  APPROVED_USDC_BY_NETWORK,
   APPROVED_X402_SCHEME,
   APPROVED_X402_VERSION,
   MVP_TASK_ID,
+  approvedUsdcForNetwork,
+  isApprovedAssetTransferMethod,
+  isApprovedPaymentNetwork,
   type OfferPolicyEvaluation,
   type OfferPolicyReasonCode,
   type OfferPolicyResult,
@@ -24,7 +35,7 @@ export const OFFER_POLICY_VERSION = "1.0" as const;
 export type OfferPolicyOptions = {
   /**
    * Explicit human/payment authorization. Defaults to false.
-   * Structural Sepolia compatibility never implies payment approval.
+   * Structural dual-network compatibility never implies payment approval.
    */
   readonly paymentApprovalGranted?: boolean;
   /**
@@ -33,14 +44,20 @@ export type OfferPolicyOptions = {
    */
   readonly expectedResource?: string | null;
   /**
-   * Optional declared service task. Policy never upgrades B4 from this alone.
+   * Optional declared service task. Informational for hire binding only —
+   * not required for structural offer eligibility or policyPass.
    */
   readonly declaredTaskId?: string | null;
 };
 
-function assetEqualsApproved(asset: string): boolean {
+function assetMatchesOfferNetwork(
+  asset: string,
+  network: string,
+): boolean {
+  const approved = approvedUsdcForNetwork(network);
+  if (!approved) return false;
   try {
-    return isAddressEqual(getAddress(asset), getAddress(APPROVED_SEPOLIA_TEST_USDC));
+    return isAddressEqual(getAddress(asset), getAddress(approved));
   } catch {
     return false;
   }
@@ -61,20 +78,36 @@ function evaluateRequirement(
     );
   }
 
-  if (requirement.network === "eip155:8453") {
-    reasonCodes.push("networkMainnetRejected");
-    notes.push("network eip155:8453 (Base Mainnet) is not an approved payment network");
-  } else if (requirement.network !== APPROVED_PAYMENT_NETWORK) {
-    reasonCodes.push("networkNotSepolia");
+  if (!isApprovedPaymentNetwork(requirement.network)) {
+    reasonCodes.push("networkNotApproved");
     notes.push(
-      `network "${requirement.network}" ≠ approved "${APPROVED_PAYMENT_NETWORK}"`,
+      `network "${requirement.network}" ∉ approved [${APPROVED_PAYMENT_NETWORKS.join(", ")}]`,
     );
   }
 
-  if (!assetEqualsApproved(requirement.asset)) {
-    reasonCodes.push("assetNotApprovedSepoliaUsdc");
+  if (!assetMatchesOfferNetwork(requirement.asset, requirement.network)) {
+    reasonCodes.push("assetNotApprovedUsdcForNetwork");
+    const expected = approvedUsdcForNetwork(requirement.network);
     notes.push(
-      `asset ${requirement.asset} ≠ approved Sepolia test USDC ${APPROVED_SEPOLIA_TEST_USDC}`,
+      expected
+        ? `asset ${requirement.asset} ≠ approved USDC ${expected} for ${requirement.network} (cross-network substitution rejected)`
+        : `asset ${requirement.asset} cannot be validated — network not approved`,
+    );
+  }
+
+  const transferMethod = requirement.assetTransferMethod;
+  if (transferMethod != null) {
+    if (!isApprovedAssetTransferMethod(transferMethod)) {
+      reasonCodes.push("unsupportedTransferMethod");
+      notes.push(
+        `assetTransferMethod "${transferMethod}" is not an approved exact/EVM method`,
+      );
+    } else {
+      notes.push(`assetTransferMethod=${transferMethod}`);
+    }
+  } else {
+    notes.push(
+      "assetTransferMethod absent — exact/EVM default eip3009 assumed for shape only; not a live facilitator grant",
     );
   }
 
@@ -101,12 +134,12 @@ function evaluateRequirement(
   if (declared && declared !== MVP_TASK_ID) {
     reasonCodes.push("taskNotBound");
     notes.push(
-      `declared task "${declared}" is not ${MVP_TASK_ID} — keyword similarity is not a match`,
+      `declared task "${declared}" is not ${MVP_TASK_ID} — hire binding only; not required for offer discovery`,
     );
   } else if (!declared) {
     reasonCodes.push("taskNotBound");
     notes.push(
-      `no verified binding to ${MVP_TASK_ID}; docs/skills alone do not bind payment`,
+      `no verified binding to ${MVP_TASK_ID}; task schema not required for x402 seller discovery / structural eligibility`,
     );
   }
 
@@ -118,22 +151,32 @@ function evaluateRequirement(
     }
   }
 
+  // Offline path never proves a live facilitator — informational, non-blocking.
+  reasonCodes.push("facilitatorCompatibilityUnverified");
+  notes.push(
+    "facilitator compatibility not live-verified (offline / NO_LIVE_PAYMENT)",
+  );
+
   const blocking = reasonCodes.filter(
     (code) =>
       code !== "taskNotBound" &&
       code !== "paymentApprovalRequired" &&
       code !== "paymentApprovalNotGranted" &&
       code !== "structurallyCompatible" &&
+      code !== "facilitatorCompatibilityUnverified" &&
       code !== "multipleAlternativesEvaluated",
   );
 
-  // Structural compatibility: version already gated by parser; scheme/network/asset/amount/payTo shape.
+  // Structural: scheme / approved network / matching USDC / amount / payTo / transfer method.
   const structurallyCompatible = blocking.length === 0;
 
   if (structurallyCompatible) {
     reasonCodes.push("structurallyCompatible");
+    const usdc = APPROVED_USDC_BY_NETWORK[
+      requirement.network as keyof typeof APPROVED_USDC_BY_NETWORK
+    ];
     notes.push(
-      "Offer matches approved x402 v2 exact / eip155:84532 / Sepolia test USDC shape",
+      `Offer matches approved x402 v2 exact / ${requirement.network} / USDC ${usdc} shape`,
     );
   }
 
@@ -144,10 +187,9 @@ function evaluateRequirement(
     notes.push("Payment approval not granted — refuse signing/settlement");
   }
 
+  // D8.7: task schema is NOT required for policyPass on offer eligibility.
   const policyPass =
-    structurallyCompatible && paymentApprovalGranted && declared === MVP_TASK_ID
-      ? true
-      : false;
+    structurallyCompatible && paymentApprovalGranted ? true : false;
 
   return {
     index,
@@ -157,6 +199,20 @@ function evaluateRequirement(
     reasonCodes,
     notes: notes.join("; "),
   };
+}
+
+function baseResultFields(paymentApprovalGranted: boolean) {
+  return {
+    policyVersion: OFFER_POLICY_VERSION,
+    approvedNetworks: APPROVED_PAYMENT_NETWORKS,
+    approvedUsdcByNetwork: APPROVED_USDC_BY_NETWORK,
+    approvedNetwork: APPROVED_PAYMENT_NETWORK,
+    approvedAsset: APPROVED_SEPOLIA_TEST_USDC,
+    approvedScheme: APPROVED_X402_SCHEME,
+    approvedX402Version: APPROVED_X402_VERSION,
+    mvpTaskId: MVP_TASK_ID,
+    paymentApprovalGranted,
+  } as const;
 }
 
 /**
@@ -170,15 +226,9 @@ export function evaluateOfferPolicy(
 
   if (!parseResult) {
     return {
-      policyVersion: OFFER_POLICY_VERSION,
+      ...baseResultFields(paymentApprovalGranted),
       parseOk: false,
       fixtureKind: "none",
-      approvedNetwork: APPROVED_PAYMENT_NETWORK,
-      approvedAsset: APPROVED_SEPOLIA_TEST_USDC,
-      approvedScheme: APPROVED_X402_SCHEME,
-      approvedX402Version: APPROVED_X402_VERSION,
-      mvpTaskId: MVP_TASK_ID,
-      paymentApprovalGranted,
       evaluations: [
         {
           index: -1,
@@ -201,15 +251,9 @@ export function evaluateOfferPolicy(
       codes.push("unsupportedX402Version");
     }
     return {
-      policyVersion: OFFER_POLICY_VERSION,
+      ...baseResultFields(paymentApprovalGranted),
       parseOk: false,
       fixtureKind: parseResult.fixtureKind,
-      approvedNetwork: APPROVED_PAYMENT_NETWORK,
-      approvedAsset: APPROVED_SEPOLIA_TEST_USDC,
-      approvedScheme: APPROVED_X402_SCHEME,
-      approvedX402Version: APPROVED_X402_VERSION,
-      mvpTaskId: MVP_TASK_ID,
-      paymentApprovalGranted,
       evaluations: [
         {
           index: -1,
@@ -242,23 +286,17 @@ export function evaluateOfferPolicy(
   const anyPolicyPass = evaluations.some((e) => e.policyPass);
 
   return {
-    policyVersion: OFFER_POLICY_VERSION,
+    ...baseResultFields(paymentApprovalGranted),
     parseOk: true,
     fixtureKind: parseResult.fixtureKind,
-    approvedNetwork: APPROVED_PAYMENT_NETWORK,
-    approvedAsset: APPROVED_SEPOLIA_TEST_USDC,
-    approvedScheme: APPROVED_X402_SCHEME,
-    approvedX402Version: APPROVED_X402_VERSION,
-    mvpTaskId: MVP_TASK_ID,
-    paymentApprovalGranted,
     evaluations,
     anyStructurallyCompatible,
     anyPolicyPass,
     notes: anyPolicyPass
       ? "At least one offer passes policy including explicit payment approval"
       : anyStructurallyCompatible
-        ? "At least one offer is structurally Sepolia-compatible; payment approval and/or task binding still required"
-        : "No offer satisfies approved Sepolia payment shape",
+        ? "At least one offer is structurally compatible on an approved network; payment approval still required (facilitator not live-verified)"
+        : "No offer satisfies approved dual-network payment shape (network+matching USDC+scheme+amount+payTo)",
   };
 }
 
@@ -282,15 +320,9 @@ export function evaluateProviderClaimWithoutChallenge(input: {
   }
 
   return {
-    policyVersion: OFFER_POLICY_VERSION,
+    ...baseResultFields(input.paymentApprovalGranted === true),
     parseOk: false,
     fixtureKind: "none",
-    approvedNetwork: APPROVED_PAYMENT_NETWORK,
-    approvedAsset: APPROVED_SEPOLIA_TEST_USDC,
-    approvedScheme: APPROVED_X402_SCHEME,
-    approvedX402Version: APPROVED_X402_VERSION,
-    mvpTaskId: MVP_TASK_ID,
-    paymentApprovalGranted: input.paymentApprovalGranted === true,
     evaluations: [
       {
         index: -1,

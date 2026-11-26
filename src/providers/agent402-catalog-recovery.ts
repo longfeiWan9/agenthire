@@ -1039,7 +1039,7 @@ export function renderFullCatalogAnalysisMarkdown(
   lines.push(
     "## G. Payment claims",
     "",
-    "All payment assessments are **metadata-only** versus Sepolia policy (`v2` / `exact` / `eip155:84532` / USDC `0x036CbD53842c5426634e7929541eC2318f3dCF7e` / 6). They are **not** live challenges and do not set `paymentCompatible`.",
+    "All payment assessments are **metadata-only** versus dual-network policy (`v2` / `exact` / `eip155:8453|84532` / matching per-network USDC / 6). They are **not** live challenges and do not set `paymentCompatible`.",
     "",
     "## H. Security posture",
     "",

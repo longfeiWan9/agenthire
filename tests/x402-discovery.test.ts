@@ -250,7 +250,7 @@ describe("x402 discovery document recognition", () => {
     if (!empty.ok) expect(empty.reason).toBe("emptyBody");
   });
 
-  it("marks Mainnet offer as policy-fail even when parse succeeds", () => {
+  it("marks Mainnet+Mainnet-USDC offer structurally compatible; policyPass false without approval (D8.7)", () => {
     const { challengeParse, policy } = evaluateCapturedChallenge({
       fixtureKind: "synthetic",
       httpStatus: 402,
@@ -268,13 +268,9 @@ describe("x402 discovery document recognition", () => {
       body: {},
     });
     expect(challengeParse.ok).toBe(true);
-    expect(policy.anyStructurallyCompatible).toBe(false);
+    expect(policy.anyStructurallyCompatible).toBe(true);
     expect(policy.anyPolicyPass).toBe(false);
-    expect(
-      policy.evaluations.some((e) =>
-        e.reasonCodes.includes("networkMainnetRejected"),
-      ),
-    ).toBe(true);
+    expect(policy.evaluations[0]?.requirement?.network).toBe("eip155:8453");
   });
 });
 

@@ -1,9 +1,11 @@
 /**
- * Offline quote preview builder (D5.3).
+ * Offline quote preview builder (D5.3 / D8.7).
  *
  * Reuses x402 challenge-parser + offer-policy.
- * Controlled policy: x402 v2 · exact · eip155:84532 · USDC 0x036C…CF7e · decimals 6.
- * Integer-safe amounts; USDC display only when decimals confirmed; unknown ≠ zero.
+ * Controlled policy: x402 v2 · exact · {eip155:8453, eip155:84532} ·
+ * per-network USDC · decimals 6.
+ * Integer-safe amounts; USDC display only when decimals confirmed for that
+ * network's approved asset; unknown ≠ zero.
  * STRICTLY_OFFLINE — no network, signing, or payment.
  */
 
@@ -12,9 +14,12 @@ import { parseHttp402Challenge } from "../x402/challenge-parser.ts";
 import { evaluateOfferPolicy, OFFER_POLICY_VERSION } from "../x402/offer-policy.ts";
 import {
   APPROVED_PAYMENT_NETWORK,
+  APPROVED_PAYMENT_NETWORKS,
   APPROVED_SEPOLIA_TEST_USDC,
+  APPROVED_USDC_BY_NETWORK,
   APPROVED_X402_SCHEME,
   APPROVED_X402_VERSION,
+  approvedUsdcForNetwork,
 } from "../x402/challenge-types.ts";
 import type { ChallengeParseResult } from "../x402/challenge-types.ts";
 import type {
@@ -32,12 +37,23 @@ import {
 export const CONTROLLED_PAYMENT_POLICY = {
   x402Version: APPROVED_X402_VERSION,
   scheme: APPROVED_X402_SCHEME,
+  networks: APPROVED_PAYMENT_NETWORKS,
+  usdcByNetwork: APPROVED_USDC_BY_NETWORK,
+  /** @deprecated Prefer networks — Sepolia alias for fixture notes */
   network: APPROVED_PAYMENT_NETWORK,
+  /** @deprecated Prefer usdcByNetwork — Sepolia alias */
   asset: APPROVED_SEPOLIA_TEST_USDC,
   decimals: 6 as const,
 } as const;
 
 const USDC_DECIMALS = 6 as const;
+
+function isApprovedUsdcAsset(asset: string): boolean {
+  const lower = asset.toLowerCase();
+  return Object.values(APPROVED_USDC_BY_NETWORK).some(
+    (addr) => addr.toLowerCase() === lower,
+  );
+}
 
 function isUnsignedIntegerString(value: string): boolean {
   return /^[0-9]+$/.test(value);
@@ -81,8 +97,7 @@ export function buildQuoteAmountView(args: {
     };
   }
   const assetOk =
-    typeof args.asset === "string" &&
-    args.asset.toLowerCase() === APPROVED_SEPOLIA_TEST_USDC.toLowerCase();
+    typeof args.asset === "string" && isApprovedUsdcAsset(args.asset);
   if (!assetOk) {
     // Amount known as integer string but decimals not confirmed for this asset.
     return {
@@ -228,7 +243,7 @@ export function buildQuotePreviewFromAdvertisedPricing(
     structurallyCompatible: null,
     notes: [
       input.note ?? "Advertised pricing preview only",
-      `controlledPolicy=${CONTROLLED_PAYMENT_POLICY.scheme}/${CONTROLLED_PAYMENT_POLICY.network}/decimals=${CONTROLLED_PAYMENT_POLICY.decimals}`,
+      `controlledPolicy=${CONTROLLED_PAYMENT_POLICY.scheme}/networks=${CONTROLLED_PAYMENT_POLICY.networks.join(",")}/decimals=${CONTROLLED_PAYMENT_POLICY.decimals}`,
     ],
     warnings,
   });
@@ -358,8 +373,11 @@ export function buildQuotePreviewFromChallenge(
     structurallyCompatible: policy.anyStructurallyCompatible,
     notes: [
       `parseOk=true; policy anyStructurallyCompatible=${policy.anyStructurallyCompatible}`,
-      `controlledPolicy x402 v${CONTROLLED_PAYMENT_POLICY.x402Version} ${CONTROLLED_PAYMENT_POLICY.scheme} ${CONTROLLED_PAYMENT_POLICY.network} decimals=${CONTROLLED_PAYMENT_POLICY.decimals}`,
+      `controlledPolicy x402 v${CONTROLLED_PAYMENT_POLICY.x402Version} ${CONTROLLED_PAYMENT_POLICY.scheme} networks=${CONTROLLED_PAYMENT_POLICY.networks.join(",")} decimals=${CONTROLLED_PAYMENT_POLICY.decimals}`,
       policy.notes,
+      requirement.network && approvedUsdcForNetwork(requirement.network)
+        ? `offerNetwork=${requirement.network}; expectedUsdc=${approvedUsdcForNetwork(requirement.network)}`
+        : "offerNetwork not in approved dual-network set",
     ],
     warnings: [
       `provenance=${provenance}`,

@@ -137,7 +137,9 @@ describe("Base network configuration", () => {
     expect(baseMainnetNetwork.caip2).toBe("eip155:8453");
     expect(baseSepoliaNetwork.caip2).toBe("eip155:84532");
     expect(baseMainnetNetwork.purposes).toContain("wallet-activity-analysis");
+    expect(baseMainnetNetwork.purposes).toContain("future-x402-payments");
     expect(baseSepoliaNetwork.purposes).toContain("future-x402-payments");
-    expect(baseMainnetNetwork.purposes).not.toContain("future-x402-payments");
+    expect(baseMainnetNetwork.purposes).toContain("erc8004-discovery");
+    expect(baseSepoliaNetwork.purposes).toContain("erc8004-discovery");
   });
 });

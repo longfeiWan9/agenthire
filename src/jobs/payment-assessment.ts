@@ -67,13 +67,13 @@ export function assessSyntheticPaymentFixture(
     };
   }
 
-  // Structurally compatible Sepolia offer still unauthorized without approval.
+  // Structurally compatible dual-network offer still unauthorized without approval.
   // anyPolicyPass remains false while paymentApprovalGranted is false.
   return {
     status: "policyCompatibleUnapproved",
     parseOk: true,
     policyCompatible: true,
     paymentApprovalGranted: false,
-    note: "Structurally compatible Sepolia offer — paymentApprovalGranted=false; NO PAYMENT WAS MADE; paidVerified remains false",
+    note: "Structurally compatible approved-network offer — paymentApprovalGranted=false; NO PAYMENT WAS MADE; paidVerified remains false",
   };
 }

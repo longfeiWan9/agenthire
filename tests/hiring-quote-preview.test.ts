@@ -42,17 +42,24 @@ describe("buildQuoteAmountView", () => {
     expect(v.decimalsConfirmed).toBe(false);
   });
 
-  it("confirms USDC display only when asset matches approved Sepolia USDC", () => {
-    const ok = buildQuoteAmountView({
+  it("confirms USDC display for approved dual-network USDC assets (D8.7)", () => {
+    const sepolia = buildQuoteAmountView({
       atomicAmount: "25000",
       asset: APPROVED_SEPOLIA_TEST_USDC,
     });
-    expect(ok.decimalsConfirmed).toBe(true);
-    expect(ok.displayUsdc).toBe("0.025000");
+    expect(sepolia.decimalsConfirmed).toBe(true);
+    expect(sepolia.displayUsdc).toBe("0.025000");
+
+    const mainnet = buildQuoteAmountView({
+      atomicAmount: "25000",
+      asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    });
+    expect(mainnet.decimalsConfirmed).toBe(true);
+    expect(mainnet.displayUsdc).toBe("0.025000");
 
     const other = buildQuoteAmountView({
       atomicAmount: "25000",
-      asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      asset: "0x0000000000000000000000000000000000000001",
     });
     expect(other.decimalsConfirmed).toBe(false);
     expect(other.displayUsdc).toBeNull();
@@ -159,6 +166,10 @@ describe("quote provenance separation", () => {
   it("exposes controlled payment policy constants", () => {
     expect(CONTROLLED_PAYMENT_POLICY.x402Version).toBe(2);
     expect(CONTROLLED_PAYMENT_POLICY.scheme).toBe("exact");
+    expect(CONTROLLED_PAYMENT_POLICY.networks).toEqual([
+      "eip155:8453",
+      "eip155:84532",
+    ]);
     expect(CONTROLLED_PAYMENT_POLICY.network).toBe("eip155:84532");
     expect(CONTROLLED_PAYMENT_POLICY.decimals).toBe(6);
   });

@@ -15,11 +15,13 @@ import { isIP } from "node:net";
 import { getAddress, isAddress, isAddressEqual } from "viem";
 import { isBlockedIpAddress } from "../erc8004/secure-https.ts";
 import {
-  APPROVED_PAYMENT_NETWORK,
-  APPROVED_SEPOLIA_TEST_USDC,
+  APPROVED_PAYMENT_NETWORKS,
+  APPROVED_USDC_BY_NETWORK,
   APPROVED_X402_SCHEME,
   APPROVED_X402_VERSION,
   MVP_TASK_ID,
+  approvedUsdcForNetwork,
+  isApprovedPaymentNetwork,
 } from "../x402/challenge-types.ts";
 import { sanitizeEndpointForArtifact } from "./inspection-policy.ts";
 
@@ -580,19 +582,18 @@ export function assessResourceTaskRelevance(
   };
 }
 
-function assetEqualsApproved(asset: string): boolean {
+function assetMatchesClaimNetwork(asset: string, network: string): boolean {
+  const approved = approvedUsdcForNetwork(network);
+  if (!approved) return false;
   try {
-    return isAddressEqual(
-      getAddress(asset),
-      getAddress(APPROVED_SEPOLIA_TEST_USDC),
-    );
+    return isAddressEqual(getAddress(asset), getAddress(approved));
   } catch {
     return false;
   }
 }
 
 /**
- * Metadata-only payment claim assessment vs AgentHire Sepolia policy.
+ * Metadata-only payment claim assessment vs AgentHire dual-network policy.
  * Never equals a live challenge parse/policy pass.
  */
 export function assessAdvertisedPaymentClaim(
@@ -634,14 +635,15 @@ export function assessAdvertisedPaymentClaim(
     missing.push("scheme");
   }
 
-  if (claim.network != null && String(claim.network).trim()) {
+  const network =
+    claim.network != null && String(claim.network).trim()
+      ? String(claim.network).trim()
+      : null;
+  if (network) {
     present.push("network");
-    const network = String(claim.network).trim();
-    if (network === "eip155:8453") {
-      mismatches.push("network eip155:8453 (Base Mainnet) ≠ Sepolia payment policy");
-    } else if (network !== APPROVED_PAYMENT_NETWORK) {
+    if (!isApprovedPaymentNetwork(network)) {
       mismatches.push(
-        `network "${network}" ≠ approved "${APPROVED_PAYMENT_NETWORK}"`,
+        `network "${network}" ∉ approved [${APPROVED_PAYMENT_NETWORKS.join(", ")}]`,
       );
     }
   } else {
@@ -650,9 +652,15 @@ export function assessAdvertisedPaymentClaim(
 
   if (claim.asset != null && String(claim.asset).trim()) {
     present.push("asset");
-    if (!assetEqualsApproved(String(claim.asset).trim())) {
+    const asset = String(claim.asset).trim();
+    if (!network || !isApprovedPaymentNetwork(network)) {
       mismatches.push(
-        `asset ${claim.asset} ≠ approved Sepolia USDC ${APPROVED_SEPOLIA_TEST_USDC}`,
+        `asset ${asset} cannot be validated without an approved payment network`,
+      );
+    } else if (!assetMatchesClaimNetwork(asset, network)) {
+      const expected = APPROVED_USDC_BY_NETWORK[network];
+      mismatches.push(
+        `asset ${asset} ≠ approved USDC ${expected} for ${network} (cross-network substitution rejected)`,
       );
     }
   } else {
@@ -689,7 +697,7 @@ export function assessAdvertisedPaymentClaim(
   if (mismatches.length > 0) {
     return {
       assessment: "claimsPolicyMismatch",
-      notes: `Payment claim contradicts Sepolia policy: ${mismatches.join("; ")} (metadata only — not a live challenge)`,
+      notes: `Payment claim contradicts dual-network policy: ${mismatches.join("; ")} (metadata only — not a live challenge)`,
     };
   }
 
@@ -707,14 +715,13 @@ export function assessAdvertisedPaymentClaim(
       notes:
         present.length === 0
           ? "No usable payment claim fields"
-          : `Payment claim incomplete for Sepolia policy match (missing: ${[...missingRequired, ...missing.filter((m) => m === "maxAmountRequired" || m === "payTo")].join(", ") || missing.join(", ")}); metadata only — not a live challenge`,
+          : `Payment claim incomplete for dual-network policy match (missing: ${[...missingRequired, ...missing.filter((m) => m === "maxAmountRequired" || m === "payTo")].join(", ") || missing.join(", ")}); metadata only — not a live challenge`,
     };
   }
 
   return {
     assessment: "claimsPolicyMatch",
-    notes:
-      "Advertised payment metadata claims match v2/exact/eip155:84532/Sepolia USDC/6 — metadata only; not a live challenge and not policyPass",
+    notes: `Advertised payment metadata claims match v2/exact/${network}/${approvedUsdcForNetwork(network!)}/6 — metadata only; not a live challenge and not policyPass`,
   };
 }
 
@@ -1468,7 +1475,7 @@ export function renderResourceCatalogMarkdown(
   lines.push(
     "## F. Payment claims",
     "",
-    "All payment assessments are **metadata-only** versus Sepolia policy (`v2` / `exact` / `eip155:84532` / USDC `0x036CbD53842c5426634e7929541eC2318f3dCF7e` / 6). They are **not** live challenges and do not set `paymentCompatible`.",
+    "All payment assessments are **metadata-only** versus dual-network policy (`v2` / `exact` / `eip155:8453|84532` / matching per-network USDC / 6). They are **not** live challenges and do not set `paymentCompatible`.",
     "",
     "## G. Security / offline posture",
     "",

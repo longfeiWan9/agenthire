@@ -164,14 +164,15 @@ export const HIREJOB_FIXTURE_CASES: readonly HireJobFixtureCase[] = [
     fixtureId: "incompatible-payment-402",
     fixtureKind: FIXTURE_KIND,
     description:
-      "Synthetic HTTP 402 + non-Sepolia / wrong-asset offer for parser/policy tests",
+      "Synthetic HTTP 402 + cross-network USDC substitution (Sepolia net + Mainnet USDC)",
     rawInput: { kind: "ticker", ticker: "AAPL" },
     http: (() => {
       const envelope = paymentRequiredEnvelope([
         sepoliaExactOffer({
-          network: "eip155:8453",
+          // D8.7: both networks approved, but asset must match offer network
+          network: APPROVED_PAYMENT_NETWORK,
           asset: MAINNET_USDC,
-          description: "synthetic mainnet-incompatible offer",
+          description: "synthetic cross-network-incompatible offer",
         }),
       ]);
       return {

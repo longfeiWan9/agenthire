@@ -2,7 +2,7 @@
  * Conservative recognition of unsigned `/.well-known/x402` responses (D4.3c).
  *
  * Separates document recognition from protocol parse (challenge-parser) and
- * Sepolia policy (offer-policy). Manifest JSON = claims only — advertised
+ * dual-network payment policy (offer-policy). Manifest JSON = claims only — advertised
  * resources / facilitator URLs are summarized, never fetched.
  *
  * Shapes recognized (fail closed otherwise):
@@ -451,7 +451,7 @@ export function parseX402DiscoveryDocumentBytes(
 /**
  * HTTP-transport PAYMENT-REQUIRED parse for a captured exchange.
  * Canonical v2 HTTP location is the PAYMENT-REQUIRED header (base64).
- * Parser ≠ Sepolia policy pass. paymentApprovalGranted stays false.
+ * Parser ≠ dual-network policy pass. paymentApprovalGranted stays false.
  */
 export function evaluateCapturedChallenge(fixture: Http402Fixture): {
   readonly challengeParse: ChallengeParseResult;

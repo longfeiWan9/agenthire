@@ -6,6 +6,7 @@
  */
 
 import { getAddress } from "viem";
+import { APPROVED_PAYMENT_NETWORKS } from "../x402/challenge-types.ts";
 import {
   redeemDelegations,
   type PermissionContext,
@@ -98,7 +99,11 @@ export function verifyErc7710Payment(
   if (payment.accepted.scheme !== "exact") {
     return { ok: false, reason: "UNSUPPORTED_SCHEME", simulated: true };
   }
-  if (payment.accepted.network !== "eip155:84532") {
+  if (
+    !(APPROVED_PAYMENT_NETWORKS as readonly string[]).includes(
+      payment.accepted.network,
+    )
+  ) {
     return { ok: false, reason: "UNSUPPORTED_NETWORK", simulated: true };
   }
 

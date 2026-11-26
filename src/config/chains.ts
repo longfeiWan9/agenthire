@@ -1,9 +1,10 @@
 /**
- * AgentHire Base network configuration (D3.2).
+ * AgentHire Base network configuration (D3.2 / D8.7).
  *
  * Discovery: Base Mainnet (8453) + Base Sepolia (84532)
  * Wallet activity analysis: Base Mainnet (8453), read-only
- * Future x402 payments: Base Sepolia (eip155:84532) — not installed here
+ * Future x402 payments: Base Mainnet + Base Sepolia (per-network USDC)
+ *   — payment execution not enabled by network support alone (NO_LIVE_PAYMENT)
  *
  * Registry addresses verified against erc-8004-contracts @
  * b9e466c250744a7e06b13dff9d3c2844ed64f825 (README + scripts/addresses.ts).
@@ -42,7 +43,11 @@ export const baseMainnetNetwork = {
   caip2: "eip155:8453",
   chain: base,
   identityRegistry: IDENTITY_REGISTRY_ADDRESSES.baseMainnet,
-  purposes: ["wallet-activity-analysis", "erc8004-discovery"],
+  purposes: [
+    "wallet-activity-analysis",
+    "erc8004-discovery",
+    "future-x402-payments",
+  ],
 } as const satisfies AgentHireNetworkConfig;
 
 export const baseSepoliaNetwork = {

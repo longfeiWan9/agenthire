@@ -317,7 +317,7 @@ describe("advertised payment claims (§8)", () => {
     expect(result.notes).toMatch(/not a live challenge/i);
   });
 
-  it("mismatches legacy v1 and Mainnet payment claims", () => {
+  it("mismatches legacy v1 and cross-network USDC substitution (D8.7)", () => {
     expect(
       assessAdvertisedPaymentClaim({
         x402Version: 1,
@@ -330,6 +330,7 @@ describe("advertised payment claims (§8)", () => {
       }).assessment,
     ).toBe("claimsPolicyMismatch");
 
+    // Mainnet network + Sepolia USDC = cross-network substitution reject
     expect(
       assessAdvertisedPaymentClaim({
         x402Version: 2,
@@ -341,6 +342,20 @@ describe("advertised payment claims (§8)", () => {
         payTo: "0x209693Bc6afc0C5328bA36FaF03C514EF312287C",
       }).assessment,
     ).toBe("claimsPolicyMismatch");
+  });
+
+  it("matches complete Mainnet policy metadata with Mainnet USDC (D8.7)", () => {
+    const result = assessAdvertisedPaymentClaim({
+      x402Version: 2,
+      scheme: "exact",
+      network: "eip155:8453",
+      asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      assetDecimals: 6,
+      maxAmountRequired: "1000",
+      payTo: "0x209693Bc6afc0C5328bA36FaF03C514EF312287C",
+    });
+    expect(result.assessment).toBe("claimsPolicyMatch");
+    expect(result.notes).toMatch(/not a live challenge/i);
   });
 
   it("returns insufficientInformation for missing token/asset, unknown recipient, or missing price", () => {
